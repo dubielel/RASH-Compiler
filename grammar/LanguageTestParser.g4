@@ -2,33 +2,36 @@ parser grammar LanguageTestParser;
 options { tokenVocab = LanguageTestLexer; }
 
 parse
-    :   (statement)* EOF
+    :   (KW_IMPORT identifier SEMI)* (classDefinition)* EOF
     ;
 
 statement
     :   functionDefinition
     |   classDefinition
-    |   structDefinition
+    ;
+
+ expresion
+    :
     ;
 
 functionDefinition
-    :   KW_FUNCTION identifier templateParams functionParams functionReturnType functionBody
+    :   scope KW_FUNCTION identifier functionParams functionReturnType functionBody
+    ;
+
+functionBody
+    :   LBRACE variableDeclStatement* RBRACE
     ;
 
 classDefinition
-    :   KW_CLASS
+    :   KW_CLASS identifier classBody
     ;
 
-structDefinition
-    :   KW_STRUCT
+classBody
+    :   LBRACE functionDefinition* RBRACE
     ;
 
-templateParams
-    :  ANGLE_LEFT ((templateParam COMMA)* templateParam COMMA?) ANGLE_RIGHT
-    ;
-
-templateParam
-    :   IDENTIFIER
+attributeDeclaration
+    :   DECL_VAR identifier COLON typeSpecifier SEMI
     ;
 
 functionParams
@@ -36,35 +39,45 @@ functionParams
     ;
 
 paramDeclarationList
-    :   (paramDeclaration COMMA)* paramDeclaration?
+    :   (paramDeclaration COMMA)+ paramDeclaration
+    |   paramDeclaration?
     ;
 
 paramDeclaration
-    :   identifier (COLON typeSpecifier)?
+    :   identifier COLON typeSpecifier
     ;
 
 functionReturnType
     :   ARROW simpleTypeSpecifier
     ;
 
-functionBody
-    :   LBRACKET variableDeclStatement* RBRACKET
-    ;
-
 variableDeclStatement
-    :   DECL_VAR identifier (COLON simpleTypeSpecifier)? ASSIGN INTEGER_LITERAL SEMI
+    :   DECL_VAR identifier COLON typeSpecifier ASSIGN INTEGER_LITERAL SEMI
     ;
 
 typeSpecifier
-    :   simpleTypeSpecifier
+    :   (simpleTypeSpecifier | identifier) arrayBrackets?
     ;
     // | customTypeSpecifier
 
 simpleTypeSpecifier
-    :   T_INT | T_FLOAT | T_CHAR
+    :   T_INT | T_FLOAT | T_CHAR | T_STRING
     ;
 
 identifier
+    :   (nameIdentifier DOT)* nameIdentifier
+    ;
+
+nameIdentifier
     :   IDENTIFIER
+    ;
+
+arrayBrackets
+    : LBRACKET RBRACKET
+    ;
+
+scope
+    : KW_PRIVATE
+    | KW_PUBLIC
     ;
 

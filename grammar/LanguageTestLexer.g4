@@ -11,19 +11,22 @@ KW_ELSE: 'else';
 
 // Access modifiers
 KW_PRIVATE: 'private';
-KW_PROTECTED: 'protected';
 KW_PUBLIC: 'public';
 
 // Classes and structs
 KW_CLASS: 'class';
-KW_STRUCT: 'struct';
 
 // Functions etc
 KW_FUNCTION: 'func';
+KW_RETURN: 'return';
+
+// Utils
+KW_IMPORT: 'import';
 
 T_INT: 'int';
 T_FLOAT: 'float';
 T_CHAR: 'char';
+T_STRING: 'str';
 
 DECL_VAR: 'var';
 
@@ -80,14 +83,23 @@ fragment HEX_DIGIT: [0-9a-fA-F];
 fragment BIN_DIGIT: [01];
 
 COMMA: ',';
-ANGLE_LEFT: '<';
-ANGLE_RIGHT: '>';
+DOT: '.';
 LPAREN: '(';
 RPAREN: ')';
-LBRACKET: '{';
-RBRACKET: '}';
+LBRACE: '{';
+RBRACE: '}';
+LBRACKET: '[';
+RBRACKET: ']';
 COLON: ':';
 ARROW: '->';
 
 ASSIGN: '=';
 SEMI: ';';
+
+// Relations
+EQ: '==';
+NE: '!=';
+LT: '<';
+GT: '>';
+LE: '<=';
+GE: '=>';
