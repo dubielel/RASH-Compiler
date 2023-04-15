@@ -19,8 +19,20 @@ class ClassName {
 		else {
 		
 		}
-		
-		
 	}
-	
 }
+
+// single line comment
+
+/*
+multi
+line
+comment
+*/
+
+/**
+ * optionally
+ * jsdoc
+*/
+
+
