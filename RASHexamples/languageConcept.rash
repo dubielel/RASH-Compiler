@@ -1,0 +1,26 @@
+class ClassName {
+	private var atr1: str;
+
+	public var atr3: int;
+	
+	public func __init__() {}
+	
+	private func myFunction() {
+		while () {}
+		
+		for (var x: int in iterable) {}
+		
+		if () {
+		
+		}
+		else if () {
+		
+		}
+		else {
+		
+		}
+		
+		
+	}
+	
+}
