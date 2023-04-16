@@ -8,30 +8,21 @@ parse
 statement
     :   functionDefinition
     |   classDefinition
+    |   codeBlock
+    |   conditionalStatement
+    |   variableDeclStatement
+    |   variableAssignment
     ;
 
  expresion
-    :
+    :   identifier
+    |   relation
     ;
 
+
+// FUNCTIONS
 functionDefinition
-    :   scope KW_STATIC? KW_FUNCTION identifier functionParams functionReturnType functionBody
-    ;
-
-functionBody
-    :   LBRACE variableDeclStatement* RBRACE
-    ;
-
-classDefinition
-    :   KW_CLASS identifier classBody
-    ;
-
-classBody
-    :   LBRACE attributeDeclaration* functionDefinition* RBRACE
-    ;
-
-attributeDeclaration
-    :   KW_STATIC? DECL_VAR identifier COLON typeSpecifier SEMI
+    :   scope KW_STATIC? KW_FUNCTION nameIdentifier functionParams functionReturnType codeBlock
     ;
 
 functionParams
@@ -51,8 +42,42 @@ functionReturnType
     :   ARROW simpleTypeSpecifier
     ;
 
+
+//CLASSES
+classDefinition
+    :   KW_CLASS identifier classBody
+    ;
+
+classBody
+    :   LBRACE attributeDeclaration* functionDefinition* RBRACE
+    ;
+
+attributeDeclaration
+    :   KW_STATIC? DECL_VAR identifier COLON typeSpecifier SEMI
+    ;
+
+
+//CONDITIONAL INSTRUCTIONS
+conditionalStatement
+    :   KW_IF (expresion) statement (KW_ELSE KW_IF (expresion) statement)* (KW_ELSE statement)?
+    ;
+
+
+//OTHER STUFF
+codeBlock
+    : LBRACE statement* RBRACE
+    ;
+
 variableDeclStatement
-    :   DECL_VAR nameIdentifier COLON typeSpecifier ASSIGN INTEGER_LITERAL SEMI
+    :   DECL_VAR nameIdentifier COLON typeSpecifier ASSIGN expresion SEMI
+    ;
+
+variableAssignment
+    :   identifier ASSIGN expresion SEMI
+    ;
+
+relation // ????????
+    :   expresion (EQ | NE | LT | GT | LE | GE) expresion
     ;
 
 typeSpecifier
