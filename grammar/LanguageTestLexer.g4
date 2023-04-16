@@ -13,6 +13,8 @@ KW_ELSE: 'else';
 KW_PRIVATE: 'private';
 KW_PUBLIC: 'public';
 
+KW_STATIC: 'static';
+
 // Classes and structs
 KW_CLASS: 'class';
 
@@ -27,6 +29,7 @@ T_INT: 'int';
 T_FLOAT: 'float';
 T_CHAR: 'char';
 T_STRING: 'str';
+T_VOID: 'void';
 
 DECL_VAR: 'var';
 

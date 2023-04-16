@@ -15,7 +15,7 @@ statement
     ;
 
 functionDefinition
-    :   scope KW_FUNCTION identifier functionParams functionReturnType functionBody
+    :   scope KW_STATIC? KW_FUNCTION identifier functionParams functionReturnType functionBody
     ;
 
 functionBody
@@ -27,11 +27,11 @@ classDefinition
     ;
 
 classBody
-    :   LBRACE functionDefinition* RBRACE
+    :   LBRACE attributeDeclaration* functionDefinition* RBRACE
     ;
 
 attributeDeclaration
-    :   DECL_VAR identifier COLON typeSpecifier SEMI
+    :   KW_STATIC? DECL_VAR identifier COLON typeSpecifier SEMI
     ;
 
 functionParams
@@ -44,7 +44,7 @@ paramDeclarationList
     ;
 
 paramDeclaration
-    :   identifier COLON typeSpecifier
+    :   nameIdentifier COLON typeSpecifier
     ;
 
 functionReturnType
@@ -52,7 +52,7 @@ functionReturnType
     ;
 
 variableDeclStatement
-    :   DECL_VAR identifier COLON typeSpecifier ASSIGN INTEGER_LITERAL SEMI
+    :   DECL_VAR nameIdentifier COLON typeSpecifier ASSIGN INTEGER_LITERAL SEMI
     ;
 
 typeSpecifier
@@ -61,7 +61,7 @@ typeSpecifier
     // | customTypeSpecifier
 
 simpleTypeSpecifier
-    :   T_INT | T_FLOAT | T_CHAR | T_STRING
+    :   T_INT | T_FLOAT | T_CHAR | T_STRING | T_VOID
     ;
 
 identifier
