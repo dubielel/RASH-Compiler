@@ -1,11 +1,17 @@
+import x;
+from z import y;
+
 class ClassName {
 	private var atr1: str;
 
 	public var atr3: int;
 	
-	public func __init__() {}
+	public func __init__() -> ClassName {}
 	
-	private func myFunction() {
+	private func myFunction() -> void {
+
+	    var test: int = 1;
+
 		while () {}
 		
 		for (var x: int in iterable) {}
