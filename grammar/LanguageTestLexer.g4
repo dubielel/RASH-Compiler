@@ -105,4 +105,16 @@ NE: '!=';
 LT: '<';
 GT: '>';
 LE: '<=';
-GE: '=>';
+GE: '>=';
+
+// Operations
+PLUS: '+';
+MINUS: '-';
+STAR: '*';
+DIV: '/';
+MOD: '%';
+
+AND: '&';
+CARER: '^';
+OR: '|';
+QUESTION: '?';

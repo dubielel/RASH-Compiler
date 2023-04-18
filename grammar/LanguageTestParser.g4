@@ -14,11 +14,58 @@ statement
     |   variableAssignment
     ;
 
- expresion
+ expression
     :   identifier
-    |   relation
     ;
 
+// EXPRESSIONS
+castExpression
+    :   // TODO
+    ;
+
+multiplicativeExpression
+    :   castExpression ( ( STAR | DIV | MOD ) castExpression )*
+    ;
+
+additiveExpression
+    :   multiplicativeExpression ( ( PLUS | MINUS ) multiplicativeExpression )*
+    ;
+
+shiftExpression
+    :   additiveExpression ( ( GT GT | LT LT ) additiveExpression )*
+    ;
+
+relationalExpression
+    :   shiftExpression ( ( LT | GT | LE | GE ) shiftExpression )*
+    ;
+
+equalityExpression
+    :   relationalExpression ( ( EQ | NE ) relationalExpression )*
+    ;
+
+andExpression
+    :   equalityExpression ( AND equalityExpression )*
+    ;
+
+exclusiveOrExpression
+    :   andExpression ( CARET andExpression )*
+    ;
+
+inclusiveOrExpression
+    :   exclusiveOrExpression ( OR exclusiveOrExpression )*
+    ;
+
+logicalAndExpression
+    :   inclusiveOrExpression ( AND AND inclusiveOrExpression )*
+    ;
+
+logicalOrExpression
+    :   logicalAndExpression ( OR OR logicalAndExpression )*
+    ;
+
+conditionalExpression
+    :   logicalOrExpression ( QUESTION expression COLON assignmentExpression )?
+    ;   // TODO discuss assignmentExpression vs. variableAssignment referring to Cpp grammar implementation
 
 // FUNCTIONS
 functionDefinition
@@ -59,7 +106,7 @@ attributeDeclaration
 
 //CONDITIONAL INSTRUCTIONS
 conditionalStatement
-    :   KW_IF (expresion) statement (KW_ELSE KW_IF (expresion) statement)* (KW_ELSE statement)?
+    :   KW_IF (expression) statement (KW_ELSE KW_IF (expression) statement)* (KW_ELSE statement)?
     ;
 
 
@@ -69,15 +116,11 @@ codeBlock
     ;
 
 variableDeclStatement
-    :   DECL_VAR nameIdentifier COLON typeSpecifier ASSIGN expresion SEMI
+    :   DECL_VAR nameIdentifier COLON typeSpecifier ASSIGN expression SEMI
     ;
 
 variableAssignment
-    :   identifier ASSIGN expresion SEMI
-    ;
-
-relation // ????????
-    :   expresion (EQ | NE | LT | GT | LE | GE) expresion
+    :   identifier ASSIGN expression SEMI
     ;
 
 typeSpecifier
