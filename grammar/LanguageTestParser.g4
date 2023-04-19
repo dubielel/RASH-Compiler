@@ -12,6 +12,8 @@ statement
     |   conditionalStatement
     |   variableDeclStatement
     |   variableAssignment
+    |   forLoop
+    |   whileLoop
     ;
 
  expression
@@ -108,9 +110,19 @@ classAttributeDeclaration
     ;
 
 
+ //LOOPS
+ forLoop
+    :   KW_FOR LPAREN variableDeclStatement KW_IN identifier RPAREN statement
+    ;
+
+ whileLoop
+    :   KW_WHILE LPAREN expression RPAREN statement
+    ;
+
+
 //CONDITIONAL INSTRUCTIONS
 conditionalStatement
-    :   KW_IF (expression) statement (KW_ELSE KW_IF (expression) statement)* (KW_ELSE statement)?
+    :   KW_IF LPAREN expression RPAREN statement (KW_ELSE KW_IF LPAREN expression RPAREN statement)* (KW_ELSE statement)?
     ;
 
 
@@ -120,7 +132,7 @@ codeBlock
     ;
 
 variableDeclStatement
-    :   DECL_VAR nameIdentifier COLON typeSpecifier ASSIGN expression SEMI
+    :   DECL_VAR nameIdentifier COLON typeSpecifier (ASSIGN expression)? SEMI
     ;
 
 variableAssignment

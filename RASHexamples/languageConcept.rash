@@ -12,14 +12,14 @@ class ClassName {
 
 	    var test: int = 1;
 
-		while () {}
+		while (true) {}
 		
 		for (var x: int in iterable) {}
 		
-		if () {
+		if (true) {
 		
 		}
-		else if () {
+		else if (true) {
 		
 		}
 		else {
