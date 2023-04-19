@@ -2,7 +2,7 @@ parser grammar LanguageTestParser;
 options { tokenVocab = LanguageTestLexer; }
 
 parse
-    :   (KW_IMPORT identifier SEMI)* (classDefinition)* EOF
+    :   ((KW_FROM identifier)? KW_IMPORT identifier SEMI)* (classDefinition)* EOF
     ;
 
 statement
@@ -64,8 +64,9 @@ logicalOrExpression
     ;
 
 conditionalExpression
-    :   logicalOrExpression ( QUESTION expression COLON assignmentExpression )?
+    :   logicalOrExpression ( QUESTION expression COLON /*assignmentExpression*/ )?
     ;   // TODO discuss assignmentExpression vs. variableAssignment referring to Cpp grammar implementation
+
 
 // FUNCTIONS
 functionDefinition
@@ -73,34 +74,37 @@ functionDefinition
     ;
 
 functionParams
-    :   LPAREN paramDeclarationList RPAREN
+    :   LPAREN paramDeclarationList? RPAREN
     ;
 
 paramDeclarationList
-    :   (paramDeclaration COMMA)+ paramDeclaration
-    |   paramDeclaration?
+    :   paramDeclaration (COMMA paramDeclaration)*
     ;
 
 paramDeclaration
-    :   nameIdentifier COLON typeSpecifier
+    :   nameIdentifier COLON typeSpecifier (ASSIGN expression)
     ;
 
 functionReturnType
-    :   ARROW simpleTypeSpecifier
+    :   ARROW typeSpecifier
     ;
 
 
 //CLASSES
 classDefinition
-    :   KW_CLASS identifier classBody
+    :   KW_CLASS nameIdentifier classInheritance  classBody
+    ;
+
+classInheritance
+    :   (LPAREN identifier (COMMA identifier)* RPAREN)?
     ;
 
 classBody
-    :   LBRACE attributeDeclaration* functionDefinition* RBRACE
+    :   LBRACE classAttributeDeclaration* functionDefinition* RBRACE
     ;
 
-attributeDeclaration
-    :   KW_STATIC? DECL_VAR identifier COLON typeSpecifier SEMI
+classAttributeDeclaration
+    :   KW_STATIC? scope DECL_VAR identifier COLON typeSpecifier SEMI
     ;
 
 
@@ -146,6 +150,7 @@ arrayBrackets
 
 scope
     : KW_PRIVATE
+    | KW_PROTECTED
     | KW_PUBLIC
     ;
 

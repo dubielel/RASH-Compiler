@@ -11,6 +11,7 @@ KW_ELSE: 'else';
 
 // Access modifiers
 KW_PRIVATE: 'private';
+KW_PROTECTED: 'protected';
 KW_PUBLIC: 'public';
 
 KW_STATIC: 'static';
@@ -24,6 +25,7 @@ KW_RETURN: 'return';
 
 // Utils
 KW_IMPORT: 'import';
+KW_FROM: 'from';
 
 T_INT: 'int';
 T_FLOAT: 'float';
@@ -33,7 +35,7 @@ T_VOID: 'void';
 
 DECL_VAR: 'var';
 
-WHITESPACE: [\p{Zs}] -> skip;
+WHITESPACE: [\p{Zs}\t] -> skip;
 NEWLINE: ('\r\n' | [\r\n]) -> skip;
 
 STRING_LITERAL
