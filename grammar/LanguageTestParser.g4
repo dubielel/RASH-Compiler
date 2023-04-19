@@ -34,7 +34,7 @@ additiveExpression
     ;
 
 shiftExpression
-    :   additiveExpression ( ( GT GT | LT LT ) additiveExpression )*
+    :   additiveExpression ( ( LSHIFT | RSHIFT ) additiveExpression )*
     ;
 
 relationalExpression
@@ -45,24 +45,24 @@ equalityExpression
     :   relationalExpression ( ( EQ | NE ) relationalExpression )*
     ;
 
-andExpression
+bitwiseAndExpression
     :   equalityExpression ( AND equalityExpression )*
     ;
 
-exclusiveOrExpression
-    :   andExpression ( CARET andExpression )*
+bitwiseExclusiveOrExpression
+    :   bitwiseAndExpression ( CARET bitwiseAndExpression )*
     ;
 
-inclusiveOrExpression
-    :   exclusiveOrExpression ( OR exclusiveOrExpression )*
+bitwiseInclusiveOrExpression
+    :   bitwiseExclusiveOrExpression ( OR bitwiseExclusiveOrExpression )*
     ;
 
 logicalAndExpression
-    :   inclusiveOrExpression ( AND AND inclusiveOrExpression )*
+    :   bitwiseInclusiveOrExpression ( KW_AND bitwiseInclusiveOrExpression )*
     ;
 
 logicalOrExpression
-    :   logicalAndExpression ( OR OR logicalAndExpression )*
+    :   logicalAndExpression ( KW_OR logicalAndExpression )*
     ;
 
 conditionalExpression

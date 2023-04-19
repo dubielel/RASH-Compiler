@@ -23,9 +23,16 @@ KW_CLASS: 'class';
 KW_FUNCTION: 'func';
 KW_RETURN: 'return';
 
+// Expressions
+KW_AND: 'and';
+KW_OR: 'or';
+KW_NOT: 'not';
+KW_IS: 'is';
+
 // Utils
 KW_IMPORT: 'import';
 KW_FROM: 'from';
+KW_AS: 'as';
 
 T_INT: 'int';
 T_FLOAT: 'float';
@@ -108,6 +115,8 @@ LT: '<';
 GT: '>';
 LE: '<=';
 GE: '>=';
+LSHIFT: '<<';
+RSHIFT: '>>';
 
 // Operations
 PLUS: '+';
