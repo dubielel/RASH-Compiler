@@ -129,3 +129,6 @@ AND: '&';
 CARER: '^';
 OR: '|';
 QUESTION: '?';
+
+SINGLE_LINE_COMMENT: '//' ~[\r]* -> skip;
+MULTI_LINE_COMMENT: '/*' .*? '*/' -> skip;
