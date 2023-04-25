@@ -11,7 +11,7 @@ class ClassName {
 
 	private func myFunction() -> void {
 	    func nestedFunc() -> type {
-            // dupa
+            // test
         }
 	    var test: int = 1;
 
@@ -69,11 +69,11 @@ class T
             print(x + 2);
         }
 
-        // dupa
-        sdkhgf(9, fhvjgxhvg, 4, "ffdss");
+        // test
+        test5(9, test2, 4, "test");
         /*
         komentarz
-        multilajnowy
+        testowy
         */
 
         return true;
