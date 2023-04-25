@@ -150,7 +150,6 @@ codeBlock
 literal
     :   INTEGER_LITERAL
     |   FLOAT_LITERAL
-    |   DOUBLE_LITERAL
     |   STRING_LITERAL
     |   BOOL_LITERAL
     ;
