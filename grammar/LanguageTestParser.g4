@@ -2,7 +2,12 @@ parser grammar LanguageTestParser;
 options { tokenVocab = LanguageTestLexer; }
 
 parse
-    :   ((KW_FROM identifier)? KW_IMPORT identifier SEMI)* (classDefinition)* EOF
+    :   importStatement* (classDefinition)* EOF
+    ;
+
+// IMPORTS
+importStatement
+    :   (KW_FROM identifier)? KW_IMPORT identifier SEMI
     ;
 
 statement
@@ -12,12 +17,12 @@ statement
     |   conditionalStatement
     |   variableDeclStatement
     |   variableAssignment
-    |   forLoop
-    |   whileLoop
+    |   loopStatement
     ;
 
  expression
     :   identifier
+    |   literal
     ;
 
 // EXPRESSIONS
@@ -69,7 +74,6 @@ conditionalExpression
     :   logicalOrExpression ( QUESTION expression COLON /*assignmentExpression*/ )?
     ;   // TODO discuss assignmentExpression vs. variableAssignment referring to Cpp grammar implementation
 
-
 // FUNCTIONS
 functionDefinition
     :   scope KW_STATIC? KW_FUNCTION nameIdentifier functionParams functionReturnType codeBlock
@@ -110,13 +114,10 @@ classAttributeDeclaration
     ;
 
 
-//LOOPS
-forLoop
-    :   KW_FOR LPAREN variableDeclStatement KW_IN identifier RPAREN statement
-    ;
-
-whileLoop
-    :   KW_WHILE LPAREN expression RPAREN statement
+// LOOPS
+loopStatement
+    :   KW_WHILE LPAREN expression? RPAREN codeBlock
+    |   KW_FOR LPAREN DECL_VAR identifier COLON typeSpecifier KW_IN identifier RPAREN codeBlock
     ;
 
 
@@ -129,6 +130,11 @@ conditionalStatement
 //OTHER STUFF
 codeBlock
     : LBRACE statement* RBRACE
+    ;
+
+literal
+    :   INTEGER_LITERAL
+    |   STRING_LITERAL
     ;
 
 variableDeclStatement
@@ -157,12 +163,9 @@ nameIdentifier
     ;
 
 arrayBrackets
-    : LBRACKET RBRACKET
+    :   LBRACKET RBRACKET
     ;
 
 scope
-    : KW_PRIVATE
-    | KW_PROTECTED
-    | KW_PUBLIC
+    :   KW_PUBLIC | KW_PRIVATE | KW_PROTECTED
     ;
-
