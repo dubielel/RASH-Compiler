@@ -33,19 +33,19 @@ additiveExpression
     :   multiplicativeExpression ( ( PLUS | MINUS ) multiplicativeExpression )*
     ;
 
-shiftExpression
+/*shiftExpression
     :   additiveExpression ( ( LSHIFT | RSHIFT ) additiveExpression )*
-    ;
+    ;*/
 
 relationalExpression
-    :   shiftExpression ( ( LT | GT | LE | GE ) shiftExpression )*
+    :   additiveExpression ( ( LT | GT | LE | GE ) additiveExpression )*
     ;
 
 equalityExpression
     :   relationalExpression ( ( EQ | NE ) relationalExpression )*
     ;
 
-bitwiseAndExpression
+/*bitwiseAndExpression
     :   equalityExpression ( AND equalityExpression )*
     ;
 
@@ -55,10 +55,10 @@ bitwiseExclusiveOrExpression
 
 bitwiseInclusiveOrExpression
     :   bitwiseExclusiveOrExpression ( OR bitwiseExclusiveOrExpression )*
-    ;
+    ;*/
 
 logicalAndExpression
-    :   bitwiseInclusiveOrExpression ( KW_AND bitwiseInclusiveOrExpression )*
+    :   equalityExpression ( KW_AND equalityExpression )*
     ;
 
 logicalOrExpression
@@ -110,12 +110,12 @@ classAttributeDeclaration
     ;
 
 
- //LOOPS
- forLoop
+//LOOPS
+forLoop
     :   KW_FOR LPAREN variableDeclStatement KW_IN identifier RPAREN statement
     ;
 
- whileLoop
+whileLoop
     :   KW_WHILE LPAREN expression RPAREN statement
     ;
 

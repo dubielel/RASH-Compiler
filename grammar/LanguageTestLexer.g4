@@ -105,7 +105,14 @@ RBRACKET: ']';
 COLON: ':';
 ARROW: '->';
 
+// Assignment operators
 ASSIGN: '=';
+STAR_ASSIGN: '*=';
+DIV_ASSIGN: '/=';
+MOD_ASSIGN: '%=';
+PLUS_ASSIGN: '+=';
+MINUS_ASSIGN: '-=';
+POW_ASSIGN: '**=';
 SEMI: ';';
 
 // Relations
@@ -124,8 +131,9 @@ MINUS: '-';
 STAR: '*';
 DIV: '/';
 MOD: '%';
+POW: '**';
 
 AND: '&';
-CARER: '^';
+CARET: '^';
 OR: '|';
 QUESTION: '?';
