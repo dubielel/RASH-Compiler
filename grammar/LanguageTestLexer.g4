@@ -4,6 +4,8 @@ lexer grammar LanguageTestLexer;
 KW_FOR: 'for';
 KW_WHILE: 'while';
 KW_IN: 'in';
+KW_BREAK: 'break';
+KW_CONTINUE: 'continue';
 
 // Conditionals
 KW_IF: 'if';
@@ -150,5 +152,5 @@ CARET: '^';
 OR: '|';
 QUESTION: '?';
 
-SINGLE_LINE_COMMENT: '//' ~[\r]* -> skip;
+SINGLE_LINE_COMMENT: '//' ~ [\r\n]* -> skip;
 MULTI_LINE_COMMENT: '/*' .*? '*/' -> skip;

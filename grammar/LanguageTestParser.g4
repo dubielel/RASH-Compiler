@@ -12,20 +12,22 @@ importStatement
 
 statement
     :   functionDefinition
-    |   classDefinition
     |   codeBlock
     |   conditionalStatement
-    |   variableDeclStatement
-    |   variableAssignment
     |   loopStatement
+    |   jumpStatement SEMI
+    |   variableDeclStatement SEMI
+    |   variableAssignment SEMI
+    |   expression SEMI
     ;
 
 arrayDeclaration
-    :   KW_NEW simpleTypeSpecifier LBRACKET literal RBRACKET bracedInitList
+    :   KW_NEW ( nameIdentifier | simpleTypeSpecifier ) ( LBRACKET literal RBRACKET bracedInitList ) ?
     ;
 
 primaryExpression
     :   literal+
+    |   functionCall
     |   LPAREN expression RPAREN
     |   arrayDeclaration
     |   identifier
@@ -91,7 +93,7 @@ initializerList
 
 // FUNCTIONS
 functionDefinition
-    :   scope KW_STATIC? KW_FUNCTION nameIdentifier functionParams functionReturnType codeBlock
+    :   KW_FUNCTION nameIdentifier functionParams functionReturnType codeBlock
     ;
 
 functionParams
@@ -110,10 +112,13 @@ functionReturnType
     :   ARROW typeSpecifier
     ;
 
+functionCall
+    :   identifier LPAREN ( expression ( COMMA expression )* )? RPAREN
+    ;
 
 //CLASSES
 classDefinition
-    :   KW_CLASS nameIdentifier classInheritance  classBody
+    :   KW_CLASS nameIdentifier classInheritance classBody
     ;
 
 classInheritance
@@ -121,7 +126,7 @@ classInheritance
     ;
 
 classBody
-    :   LBRACE classAttributeDeclaration* functionDefinition* RBRACE
+    :   LBRACE classAttributeDeclaration* ( scope KW_STATIC? functionDefinition )* RBRACE
     ;
 
 classAttributeDeclaration
@@ -131,8 +136,8 @@ classAttributeDeclaration
 
 // LOOPS
 loopStatement
-    :   KW_WHILE LPAREN expression? RPAREN codeBlock
-    |   KW_FOR LPAREN DECL_VAR identifier COLON typeSpecifier KW_IN identifier RPAREN codeBlock
+    :   KW_WHILE LPAREN expression? RPAREN statement
+    |   KW_FOR LPAREN DECL_VAR identifier COLON typeSpecifier KW_IN identifier RPAREN statement
     ;
 
 
@@ -154,13 +159,19 @@ literal
     |   BOOL_LITERAL
     ;
 
+jumpStatement
+    :   KW_RETURN expression?
+    |   KW_BREAK
+    |   KW_CONTINUE
+    ;
+
 variableDeclStatement
-    :   DECL_VAR nameIdentifier COLON typeSpecifier (ASSIGN expression)? SEMI
+    :   DECL_VAR nameIdentifier COLON typeSpecifier (ASSIGN expression)?
     ;
 
 variableAssignment
     :   identifier assignmentOperator expression SEMI
-    |   identifier LBRACKET expression RBRACKET assignmentOperator expression SEMI
+    |   identifier LBRACKET expression RBRACKET assignmentOperator expression
     ;
 
 assignmentOperator
@@ -176,7 +187,6 @@ assignmentOperator
 typeSpecifier
     :   (simpleTypeSpecifier | identifier) arrayBrackets?
     ;
-    // | customTypeSpecifier
 
 simpleTypeSpecifier
     :   T_INT | T_FLOAT | T_CHAR | T_STRING | T_VOID | T_BOOL
