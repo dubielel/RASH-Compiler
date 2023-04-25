@@ -20,27 +20,31 @@ statement
     |   loopStatement
     ;
 
- expression
-    :   identifier
-    |   literal
+arrayDeclaration
+    :   KW_NEW simpleTypeSpecifier LBRACKET literal RBRACKET bracedInitList
     ;
 
+primaryExpression
+    :   literal+
+    |   LPAREN expression RPAREN
+    |   arrayDeclaration
+    |   identifier
+    ;
+
+
 // EXPRESSIONS
-castExpression
-    :   // TODO
+postfixExpression
+    :   primaryExpression
+    |   postfixExpression LBRACKET (expression | bracedInitList) RBRACKET
     ;
 
 multiplicativeExpression
-    :   castExpression ( ( STAR | DIV | MOD ) castExpression )*
+    :   postfixExpression ( ( STAR | DIV | MOD ) postfixExpression )*
     ;
 
 additiveExpression
     :   multiplicativeExpression ( ( PLUS | MINUS ) multiplicativeExpression )*
     ;
-
-/*shiftExpression
-    :   additiveExpression ( ( LSHIFT | RSHIFT ) additiveExpression )*
-    ;*/
 
 relationalExpression
     :   additiveExpression ( ( LT | GT | LE | GE ) additiveExpression )*
@@ -49,18 +53,6 @@ relationalExpression
 equalityExpression
     :   relationalExpression ( ( EQ | NE ) relationalExpression )*
     ;
-
-/*bitwiseAndExpression
-    :   equalityExpression ( AND equalityExpression )*
-    ;
-
-bitwiseExclusiveOrExpression
-    :   bitwiseAndExpression ( CARET bitwiseAndExpression )*
-    ;
-
-bitwiseInclusiveOrExpression
-    :   bitwiseExclusiveOrExpression ( OR bitwiseExclusiveOrExpression )*
-    ;*/
 
 logicalAndExpression
     :   equalityExpression ( KW_AND equalityExpression )*
@@ -71,8 +63,31 @@ logicalOrExpression
     ;
 
 conditionalExpression
-    :   logicalOrExpression ( QUESTION expression COLON /*assignmentExpression*/ )?
-    ;   // TODO discuss assignmentExpression vs. variableAssignment referring to Cpp grammar implementation
+    :   logicalOrExpression ( QUESTION expression COLON assignmentExpression )?
+    ;
+
+assignmentExpression
+    :   conditionalExpression
+    |   logicalOrExpression assignmentOperator initializerClause
+    ;
+
+expression
+   :   assignmentExpression
+   ;
+
+initializerClause
+    :   assignmentExpression
+    |   bracedInitList
+    ;
+
+bracedInitList
+    :   LBRACE initializerList? RBRACE
+    ;
+
+initializerList
+    :   initializerClause ( COMMA initializerClause )*
+    ;
+
 
 // FUNCTIONS
 functionDefinition
@@ -134,7 +149,10 @@ codeBlock
 
 literal
     :   INTEGER_LITERAL
+    |   FLOAT_LITERAL
+    |   DOUBLE_LITERAL
     |   STRING_LITERAL
+    |   BOOL_LITERAL
     ;
 
 variableDeclStatement
@@ -142,7 +160,18 @@ variableDeclStatement
     ;
 
 variableAssignment
-    :   identifier ASSIGN expression SEMI
+    :   identifier assignmentOperator expression SEMI
+    |   identifier LBRACKET expression RBRACKET assignmentOperator expression SEMI
+    ;
+
+assignmentOperator
+    :   ASSIGN
+    |   STAR_ASSIGN
+    |   DIV_ASSIGN
+    |   MOD_ASSIGN
+    |   PLUS_ASSIGN
+    |   MINUS_ASSIGN
+    |   POW_ASSIGN
     ;
 
 typeSpecifier
@@ -151,7 +180,7 @@ typeSpecifier
     // | customTypeSpecifier
 
 simpleTypeSpecifier
-    :   T_INT | T_FLOAT | T_CHAR | T_STRING | T_VOID
+    :   T_INT | T_FLOAT | T_CHAR | T_STRING | T_VOID | T_BOOL
     ;
 
 identifier

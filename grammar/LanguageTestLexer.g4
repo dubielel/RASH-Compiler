@@ -29,16 +29,22 @@ KW_OR: 'or';
 KW_NOT: 'not';
 KW_IS: 'is';
 
+// Booleans
+KW_TRUE: 'True';
+KW_FALSE: 'False';
+
 // Utils
 KW_IMPORT: 'import';
 KW_FROM: 'from';
 KW_AS: 'as';
+KW_NEW: 'new';
 
 T_INT: 'int';
 T_FLOAT: 'float';
 T_CHAR: 'char';
 T_STRING: 'str';
 T_VOID: 'void';
+T_BOOL: 'bool';
 
 DECL_VAR: 'var';
 
@@ -56,17 +62,27 @@ STRING_LITERAL
     )* '"'
     ;
 
-// Numbers
+// Boolean
+BOOL_LITERAL
+    :   KW_TRUE
+    |   KW_FALSE
+    ;
 
+// Numbers
 INTEGER_LITERAL
-   :
-   (
-      DEC_LITERAL
-      | BIN_LITERAL
-      | OCT_LITERAL
-      | HEX_LITERAL
-   )
-   ;
+    :   DEC_LITERAL
+    |   BIN_LITERAL
+    |   OCT_LITERAL
+    |   HEX_LITERAL
+    ;
+
+FLOAT_LITERAL
+    :   DEC_LITERAL '.' DEC_LITERAL 'f'
+    ;
+
+DOUBLE_LITERAL
+    :   DEC_LITERAL '.' DEC_LITERAL
+    ;
 
 // Underscore allows for thousands division etc
 
