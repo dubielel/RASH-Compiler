@@ -40,8 +40,13 @@ postfixExpression
     |   postfixExpression LBRACKET (expression | bracedInitList) RBRACKET
     ;
 
+unaryExpression
+    :   postfixExpression
+    |   KW_NOT unaryExpression
+    ;
+
 multiplicativeExpression
-    :   postfixExpression ( ( STAR | DIV | MOD ) postfixExpression )*
+    :   unaryExpression ( ( STAR | DIV | MOD ) unaryExpression )*
     ;
 
 additiveExpression
