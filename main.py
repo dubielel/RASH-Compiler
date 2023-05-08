@@ -4,16 +4,16 @@ from gen.LanguageTestParserVisitor import LanguageTestParserVisitor
 from gen.LanguageTestParserListener import LanguageTestParserListener
 from antlr4 import *
 
-from testListener import RASHTestListener
 from testVisitor import RASHTestVisitor
 
 
 def main():
-    in_file = FileStream('RASHexamples/languageConcept.rash')
+    in_file = FileStream('RASHexamples/codeGenTest.rash')
     lexer = LanguageTestLexer(in_file)
     stream = CommonTokenStream(lexer)
     parser = LanguageTestParser(stream)
     tree = parser.parse()
+
     # print(tree.toStringTree(recog=parser))
 
     # walker = ParseTreeWalker()

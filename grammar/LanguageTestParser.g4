@@ -110,7 +110,7 @@ paramDeclarationList
     ;
 
 paramDeclaration
-    :   nameIdentifier COLON typeSpecifier (ASSIGN expression)
+    :   nameIdentifier COLON typeSpecifier (ASSIGN expression)?
     ;
 
 functionReturnType
@@ -131,11 +131,15 @@ classInheritance
     ;
 
 classBody
-    :   LBRACE classAttributeDeclaration* ( scope KW_STATIC? functionDefinition )* RBRACE
+    :   LBRACE classAttributeDeclaration* classMethodDefinition* RBRACE
     ;
 
 classAttributeDeclaration
     :   KW_STATIC? scope DECL_VAR identifier COLON typeSpecifier SEMI
+    ;
+
+classMethodDefinition
+    :   scope KW_STATIC? functionDefinition
     ;
 
 

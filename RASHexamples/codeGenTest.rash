@@ -1,0 +1,33 @@
+import x;
+
+class ClassName {
+	public var atr3: int;
+	private var atr1: str;
+
+	public func __init__() -> ClassName {}
+
+	private func myFunction(abc: int) -> void {
+	    var test: int = 1;
+
+		while (true) {
+		    if (1 < 2) {
+		        continue;
+		    }
+		    else {
+		        break;
+		    }
+		}
+
+		for (var x: int in iterable) {}
+
+		if (true) {
+            print("test");
+		}
+		else if (false) {
+            print("test2");
+		}
+		else {
+            print("test3");
+		}
+	}
+}
