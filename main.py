@@ -21,7 +21,9 @@ def main():
     # walker.walk(listener, tree)
 
     visitor = RASHTestVisitor()
-    visitor.visit(tree)
+    result = visitor.visit(tree)
+    with open("result.c", "w+") as f:
+        f.write(result)
 
 
 if __name__ == '__main__':

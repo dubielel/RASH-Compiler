@@ -25,11 +25,16 @@ arrayDeclaration
     :   KW_NEW ( nameIdentifier | simpleTypeSpecifier ) ( LBRACKET literal RBRACKET bracedInitList ) ?
     ;
 
+objectDeclaration
+    :   KW_NEW (nameIdentifier | simpleTypeSpecifier) LPAREN ( expression ( COMMA expression )* )? RPAREN
+    ;
+
 primaryExpression
     :   literal+
     |   functionCall
     |   LPAREN expression RPAREN
     |   arrayDeclaration
+    |   objectDeclaration
     |   identifier
     ;
 
@@ -42,7 +47,7 @@ postfixExpression
 
 unaryExpression
     :   postfixExpression
-    |   KW_NOT unaryExpression
+    |   unaryOperator unaryExpression
     ;
 
 multiplicativeExpression
@@ -194,7 +199,7 @@ assignmentOperator
     ;
 
 typeSpecifier
-    :   (simpleTypeSpecifier | identifier) arrayBrackets?
+    :   (simpleTypeSpecifier | identifier) arrayBrackets*
     ;
 
 simpleTypeSpecifier
@@ -215,4 +220,8 @@ arrayBrackets
 
 scope
     :   KW_PUBLIC | KW_PRIVATE | KW_PROTECTED
+    ;
+
+unaryOperator
+    :   KW_NOT
     ;
