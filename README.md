@@ -1,2 +1,2 @@
 # RASH-Compiler
-Compiler of our own programming language RUSH to C
+Compiler of our own programming language RASH to C

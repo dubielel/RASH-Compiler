@@ -3,7 +3,6 @@ from gen.LanguageTestParserVisitor import LanguageTestParserVisitor
 
 
 class RASHTestVisitor(LanguageTestParserVisitor):
-
     RASH_C_TYPE_MAP = {
         "int": "int",
         "float": "float",
@@ -20,8 +19,9 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     INDENT_SIZE = 4
 
-    function_prototypes = []
     typedefs = []
+    static_vars = []
+    function_prototypes = []
     current_class = ""
     entry_point = ""
 
@@ -36,13 +36,14 @@ class RASHTestVisitor(LanguageTestParserVisitor):
     def visitParse(self, ctx):
         program = self.visitChildren(ctx)
         libraries = "\n".join([f"#include<{lib}>" for lib in self.libraries])
-        prototypes = "\n".join(self.function_prototypes)
         typedefs = "\n".join(self.typedefs)
-        program_parts = [libraries, typedefs, program, prototypes, self.entry_point]
+        static_vars = "\n".join(self.static_vars)
+        prototypes = "\n".join(self.function_prototypes)
+        program_parts = [libraries, typedefs, program, static_vars, prototypes, self.entry_point]
 
         return "\n\n".join(program_parts)
 
-    def visitImportStatement(self, ctx:LanguageTestParser.ImportStatementContext):
+    def visitImportStatement(self, ctx: LanguageTestParser.ImportStatementContext):
         # TODO: Imports
         # We need to manage import statements - 1. Do we import header files, or do that somehow else?
         # 2. How do we manage importing only specific functions from a file?
@@ -51,37 +52,37 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     # Parts of parser that evaluate only to their text -----------------------------------------------------------------
 
-    def visitNameIdentifier(self, ctx:LanguageTestParser.NameIdentifierContext):
+    def visitNameIdentifier(self, ctx: LanguageTestParser.NameIdentifierContext):
         return ctx.getText()
 
-    def visitSimpleTypeSpecifier(self, ctx:LanguageTestParser.SimpleTypeSpecifierContext):
+    def visitSimpleTypeSpecifier(self, ctx: LanguageTestParser.SimpleTypeSpecifierContext):
         return ctx.getText()
 
-    def visitIdentifier(self, ctx:LanguageTestParser.IdentifierContext):
+    def visitIdentifier(self, ctx: LanguageTestParser.IdentifierContext):
         return ctx.getText()
 
-    def visitUnaryOperator(self, ctx:LanguageTestParser.UnaryOperatorContext):
+    def visitUnaryOperator(self, ctx: LanguageTestParser.UnaryOperatorContext):
         return ctx.getText()
 
-    def visitScope(self, ctx:LanguageTestParser.ScopeContext):
+    def visitScope(self, ctx: LanguageTestParser.ScopeContext):
         return ctx.getText()
 
     # Uncategorized ----------------------------------------------------------------------------------------------------
 
-    def visitTypeSpecifier(self, ctx:LanguageTestParser.TypeSpecifierContext):
+    def visitTypeSpecifier(self, ctx: LanguageTestParser.TypeSpecifierContext):
         array_dim = 0 if not ctx.arrayBrackets() else len(ctx.arrayBrackets())
         if ctx.identifier():
             return self.visitIdentifier(ctx.identifier()) + array_dim * "*"
         else:
             return self.RASH_C_TYPE_MAP[self.visitSimpleTypeSpecifier(ctx.simpleTypeSpecifier())] + array_dim * "*"
 
-    def visitCodeBlock(self, ctx:LanguageTestParser.CodeBlockContext):
+    def visitCodeBlock(self, ctx: LanguageTestParser.CodeBlockContext):
         res = "{\n" + "\n".join(str(self.visitStatement(s)) for s in ctx.statement()) + "\n}"
         return res
 
     # Classes ----------------------------------------------------------------------------------------------------------
 
-    def visitClassDefinition(self, ctx:LanguageTestParser.ClassDefinitionContext):
+    def visitClassDefinition(self, ctx: LanguageTestParser.ClassDefinitionContext):
 
         class_name = self.visitIdentifier(ctx.nameIdentifier())
         self.current_class = class_name
@@ -94,12 +95,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return c_class_definition
 
-    def visitClassBody(self, ctx:LanguageTestParser.ClassBodyContext):
-
-        # TODO: Static
-        # What do we do with static methods? Or variables? How do we implement them?
-        # For now, we just ignore them. But we need to do something about them later.
-
+    def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext):
         c_class_body = " {\n"
 
         for attributeDeclaration in ctx.classAttributeDeclaration():
@@ -112,22 +108,36 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return c_class_body
 
-    def visitClassAttributeDeclaration(self, ctx:LanguageTestParser.ClassAttributeDeclarationContext):
-        var_type = self.visitTypeSpecifier(ctx.typeSpecifier())
+    def visitClassAttributeDeclaration(self, ctx: LanguageTestParser.ClassAttributeDeclarationContext):
+        var_decl_statement = ctx.variableDeclStatement()
+        var_type = self.visitTypeSpecifier(var_decl_statement.typeSpecifier())
+        var_identifier = self.visitNameIdentifier(var_decl_statement.nameIdentifier())
+        var_expression = self.visitExpression(
+            var_decl_statement.expression()) if var_decl_statement.expression() else None
         var_scope = self.visitScope(ctx.scope())
-        var_identifier = self.visitIdentifier(ctx.identifier())
 
-        c_class_attribute_declaration = f"    {var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier};\n"
-        return c_class_attribute_declaration
+        if ctx.KW_STATIC():
+            if var_expression:
+                self.static_vars.append(
+                    f"{var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier} = {var_expression};\n"
+                )
+            else:
+                self.static_vars.append(
+                    f"{var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier};\n"
+                )
+            return ""
+
+        # TODO solve the situation when we declare and initialize attribute -> method new?
+        return f"    {var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier};\n"
 
     # Functions and methods --------------------------------------------------------------------------------------------
 
-    def visitClassMethodDefinition(self, ctx:LanguageTestParser.ClassMethodDefinitionContext):
+    def visitClassMethodDefinition(self, ctx: LanguageTestParser.ClassMethodDefinitionContext):
         static = ctx.KW_STATIC() is not None
         method_scope = self.visitScope(ctx.scope())
         return self.visitFunctionDefinition(ctx.functionDefinition(), method_scope, static)
 
-    def visitFunctionDefinition(self, ctx:LanguageTestParser.FunctionDefinitionContext, scope: str = "public",
+    def visitFunctionDefinition(self, ctx: LanguageTestParser.FunctionDefinitionContext, scope: str = "public",
                                 is_static: bool = False):
 
         function_name = self.visitIdentifier(ctx.nameIdentifier())
@@ -135,32 +145,33 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         function_params = self.visitFunctionParams(ctx.functionParams(), is_static)
         function_body = self.visitCodeBlock(ctx.codeBlock())
 
-        # Check if function is program entry point
-        entry_point = function_name == "main" and is_static
-
-        if not entry_point:
-            in_class_name = f"{self.SCOPE_TRANSLATOR[scope]}{function_name}"
-            global_name = f"{self.current_class}_{in_class_name}"
-
-            self.function_prototypes.append(
-                f"{function_return_type} {global_name}{function_params} {function_body}\n"
-            )
-
-            return f"    {function_return_type} (*{in_class_name}){function_params};\n"
-
-        else:
-            # If function is main:
+        if function_name == "main" and is_static:
             self.entry_point = f"\nint main(int argc, {function_params[1:]} {function_body[:-1]}return 0;\n" + "}"
             return ""
 
-    def visitFunctionReturnType(self, ctx:LanguageTestParser.FunctionReturnTypeContext):
+        in_class_name = f"{self.SCOPE_TRANSLATOR[scope]}{function_name}"
+        global_name = f"{self.current_class}_{in_class_name}"
+
+        if is_static:
+            self.function_prototypes.append(
+                f"{function_return_type} {in_class_name}{function_params} {function_body}\n"
+            )
+            return ""
+
+        self.function_prototypes.append(
+            f"{function_return_type} {global_name}{function_params} {function_body}\n"
+        )
+
+        return f"    {function_return_type} (*{in_class_name}){function_params};\n"
+
+    def visitFunctionReturnType(self, ctx: LanguageTestParser.FunctionReturnTypeContext):
         return self.visitTypeSpecifier(ctx.typeSpecifier())
 
-    def visitFunctionParams(self, ctx:LanguageTestParser.FunctionParamsContext, is_static: bool = False):
+    def visitFunctionParams(self, ctx: LanguageTestParser.FunctionParamsContext, is_static: bool = False):
         c_params = f"({self.visitParamDeclarationList(ctx.paramDeclarationList(), is_static)})"
         return c_params
 
-    def visitParamDeclarationList(self, ctx:LanguageTestParser.ParamDeclarationListContext, is_static: bool = False):
+    def visitParamDeclarationList(self, ctx: LanguageTestParser.ParamDeclarationListContext, is_static: bool = False):
         param_declarations = []
 
         if not is_static:
@@ -173,7 +184,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return ", ".join(param_declarations)
 
-    def visitParamDeclaration(self, ctx:LanguageTestParser.ParamDeclarationContext):
+    def visitParamDeclaration(self, ctx: LanguageTestParser.ParamDeclarationContext):
 
         c_param_type = self.visitTypeSpecifier(ctx.typeSpecifier())
         c_param_name = self.visitNameIdentifier(ctx.nameIdentifier())
@@ -186,11 +197,11 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     # Statements -------------------------------------------------------------------------------------------------------
 
-    def visitStatement(self, ctx:LanguageTestParser.StatementContext):
+    def visitStatement(self, ctx: LanguageTestParser.StatementContext):
         result = self.visitChildren(ctx)
         return result
 
-    def visitVariableDeclStatement(self, ctx:LanguageTestParser.VariableDeclStatementContext):
+    def visitVariableDeclStatement(self, ctx: LanguageTestParser.VariableDeclStatementContext):
         var_type = self.visitTypeSpecifier(ctx.typeSpecifier())
         var_identifier = self.visitIdentifier(ctx.nameIdentifier())
         var_value = self.visitExpression(ctx.expression())
@@ -199,7 +210,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return f"{var_type} {var_identifier} = {var_value}"
 
-    def visitLoopStatement(self, ctx:LanguageTestParser.LoopStatementContext):
+    def visitLoopStatement(self, ctx: LanguageTestParser.LoopStatementContext):
         if ctx.KW_WHILE():
             return f"while ({self.visitExpression(ctx.expression())}) {self.visitStatement(ctx.statement())}"
         else:
@@ -212,19 +223,18 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             self.variables[var_identifier] = var_type
 
             loop_body = self.visitStatement(ctx.statement())
-            return loop_init + "{\n"  + var_definition + loop_body[2:]
+            return loop_init + "{\n" + var_definition + loop_body[2:]
 
-    def visitConditionalStatement(self, ctx:LanguageTestParser.ConditionalStatementContext):
+    def visitConditionalStatement(self, ctx: LanguageTestParser.ConditionalStatementContext):
         # QUESTION: Do we need to do anything here?
         return self.visitChildren(ctx)
 
-
     # Expressions ------------------------------------------------------------------------------------------------------
 
-    def visitExpression(self, ctx:LanguageTestParser.ExpressionContext):
+    def visitExpression(self, ctx: LanguageTestParser.ExpressionContext):
         return self.visitAssignmentExpression(ctx.assignmentExpression())
 
-    def visitAssignmentExpression(self, ctx:LanguageTestParser.AssignmentExpressionContext):
+    def visitAssignmentExpression(self, ctx: LanguageTestParser.AssignmentExpressionContext):
         is_conditional = ctx.conditionalExpression() is not None
 
         if is_conditional:
@@ -234,7 +244,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             # Other cases
             return self.visitChildren(ctx)
 
-    def visitConditionalExpression(self, ctx:LanguageTestParser.ConditionalExpressionContext):
+    def visitConditionalExpression(self, ctx: LanguageTestParser.ConditionalExpressionContext):
         # This is a conditional expression of type test ? 1 : 5 if it contains question mark
         is_conditional = ctx.QUESTION()
 
@@ -245,19 +255,19 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         else:
             return self.visitLogicalOrExpression(ctx.logicalOrExpression())
 
-    def visitLogicalOrExpression(self, ctx:LanguageTestParser.LogicalOrExpressionContext) -> str:
+    def visitLogicalOrExpression(self, ctx: LanguageTestParser.LogicalOrExpressionContext) -> str:
         expression_values = []
         for and_expression in ctx.logicalAndExpression():
             expression_values.append(self.visitLogicalAndExpression(and_expression))
         return " || ".join(expression_values)
 
-    def visitLogicalAndExpression(self, ctx:LanguageTestParser.LogicalAndExpressionContext) -> str:
+    def visitLogicalAndExpression(self, ctx: LanguageTestParser.LogicalAndExpressionContext) -> str:
         expression_values = []
         for eq_expression in ctx.equalityExpression():
             expression_values.append(self.visitEqualityExpression(eq_expression))
         return " && ".join(expression_values)
 
-    def visitEqualityExpression(self, ctx:LanguageTestParser.EqualityExpressionContext) -> str:
+    def visitEqualityExpression(self, ctx: LanguageTestParser.EqualityExpressionContext) -> str:
         first_rel_expression = ctx.relationalExpression(0)
         results = [self.visitRelationalExpression(first_rel_expression)]
 
@@ -269,7 +279,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return " ".join(results)
 
-    def visitRelationalExpression(self, ctx:LanguageTestParser.RelationalExpressionContext) -> str:
+    def visitRelationalExpression(self, ctx: LanguageTestParser.RelationalExpressionContext) -> str:
         first_add_expression = ctx.additiveExpression(0)
         results = [self.visitAdditiveExpression(first_add_expression)]
 
@@ -281,7 +291,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return " ".join(results)
 
-    def visitAdditiveExpression(self, ctx:LanguageTestParser.AdditiveExpressionContext) -> str:
+    def visitAdditiveExpression(self, ctx: LanguageTestParser.AdditiveExpressionContext) -> str:
         first_mul_expression = ctx.multiplicativeExpression(0)
         results = [self.visitMultiplicativeExpression(first_mul_expression)]
 
@@ -293,7 +303,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return " ".join(results)
 
-    def visitMultiplicativeExpression(self, ctx:LanguageTestParser.MultiplicativeExpressionContext):
+    def visitMultiplicativeExpression(self, ctx: LanguageTestParser.MultiplicativeExpressionContext):
         first_unary_expression = ctx.unaryExpression(0)
         results = [self.visitUnaryExpression(first_unary_expression)]
 
@@ -305,7 +315,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return " ".join(results)
 
-    def visitUnaryExpression(self, ctx:LanguageTestParser.UnaryExpressionContext):
+    def visitUnaryExpression(self, ctx: LanguageTestParser.UnaryExpressionContext):
         if ctx.postfixExpression():
             return self.visitPostfixExpression(ctx.postfixExpression())
         elif ctx.unaryExpression() and ctx.unaryOperator():
@@ -314,17 +324,17 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
             return f"{unary_operator} {expr}"
 
-    def visitPostfixExpression(self, ctx:LanguageTestParser.PostfixExpressionContext):
+    def visitPostfixExpression(self, ctx: LanguageTestParser.PostfixExpressionContext):
         if ctx.primaryExpression():
             return self.visitPrimaryExpression(ctx.primaryExpression())
         elif ctx.postfixExpression():
-            # QUESTION: Idk if this is correct, but we'll see
+            # QUESTION: IDK if this is correct, but we'll see
             return self.visitChildren(ctx)
 
-    def visitPrimaryExpression(self, ctx:LanguageTestParser.PrimaryExpressionContext):
+    def visitPrimaryExpression(self, ctx: LanguageTestParser.PrimaryExpressionContext):
         return self.visitChildren(ctx)
 
-    def visitFunctionCall(self, ctx:LanguageTestParser.FunctionCallContext):
+    def visitFunctionCall(self, ctx: LanguageTestParser.FunctionCallContext):
         identifier = self.visitIdentifier(ctx.identifier())
         res = self.visitChildren(ctx)
 
@@ -375,4 +385,3 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             return f"{aggregate} {nextResult}"
 
     # Helpers ----------------------------------------------------------------------------------------------------------
-

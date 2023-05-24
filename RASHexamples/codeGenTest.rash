@@ -1,4 +1,19 @@
 class Program {
+    public static var staticVarWithAssign: int = 123;
+    public static var staticVar: int;
+
+    private var variableWithAssign: str = "test";
+    protected var variable: bool;
+
+    public static func staticTestFunc(parameter: int) -> str {
+        print(parameter);
+        return parameter.toString();
+    }
+
+    private func testFunc() -> int {
+        return 123;
+    }
+
     public static func main(args: str[]) -> void {
         var x: int = 0;
         while (x < 100) {
@@ -25,3 +40,11 @@ class ClassName {
 	}
 }
 
+class ClassName2 {
+    private var attr1: str;
+	public var attr2: int;
+
+	public func __init__(param1: str, param2: int) -> ClassName {
+	    // TODO
+	}
+}

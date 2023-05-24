@@ -140,7 +140,7 @@ classBody
     ;
 
 classAttributeDeclaration
-    :   KW_STATIC? scope DECL_VAR identifier COLON typeSpecifier SEMI
+    :    scope KW_STATIC? variableDeclStatement SEMI
     ;
 
 classMethodDefinition
