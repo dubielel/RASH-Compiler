@@ -75,7 +75,7 @@ logicalOrExpression
     ;
 
 conditionalExpression
-    :   logicalOrExpression ( QUESTION expression COLON assignmentExpression )?
+    :   logicalOrExpression ( QUESTION expression COLON assignmentExpression )? // TODO why there is assignmentExpression instead of expression?
     ;
 
 assignmentExpression

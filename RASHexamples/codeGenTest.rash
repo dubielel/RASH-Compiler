@@ -11,6 +11,7 @@ class Program {
     }
 
     private func testFunc() -> int {
+        var ternaryOperatorResult: int = 12 == 12 ? 1 : 2;
         return 123;
     }
 

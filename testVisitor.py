@@ -246,12 +246,11 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     def visitConditionalExpression(self, ctx: LanguageTestParser.ConditionalExpressionContext):
         # This is a conditional expression of type test ? 1 : 5 if it contains question mark
-        is_conditional = ctx.QUESTION()
-
-        if is_conditional:
-            # TODO: Conditional expression
-            # Convert to if etc
-            return ""
+        if ctx.QUESTION():
+            logical_or_expression = self.visitLogicalOrExpression(ctx.logicalOrExpression())
+            expression = self.visitExpression(ctx.expression())
+            assigment_expression = self.visitAssignmentExpression(ctx.assignmentExpression())
+            return f"{logical_or_expression} ? {expression} : {assigment_expression}"
         else:
             return self.visitLogicalOrExpression(ctx.logicalOrExpression())
 
