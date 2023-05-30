@@ -35,11 +35,12 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     def visitParse(self, ctx):
         program = self.visitChildren(ctx)
+        methods_map_import = "#include \"../cutils/methods_map.h\""
         libraries = "\n".join([f"#include<{lib}>" for lib in self.libraries])
         typedefs = "\n".join(self.typedefs)
         static_vars = "\n".join(self.static_vars)
         prototypes = "\n".join(self.function_prototypes)
-        program_parts = [libraries, typedefs, program, static_vars, prototypes, self.entry_point]
+        program_parts = [methods_map_import, libraries, typedefs, program, static_vars, prototypes, self.entry_point]
 
         return "\n\n".join(program_parts)
 
@@ -77,8 +78,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             return self.RASH_C_TYPE_MAP[self.visitSimpleTypeSpecifier(ctx.simpleTypeSpecifier())] + array_dim * "*"
 
     def visitCodeBlock(self, ctx: LanguageTestParser.CodeBlockContext):
-        res = "{\n" + "\n".join(str(self.visitStatement(s)) for s in ctx.statement()) + "\n}"
-        return res
+        return "{\n" + "\n".join(str(self.visitStatement(s)) for s in ctx.statement()) + "\n}"
 
     # Classes ----------------------------------------------------------------------------------------------------------
 
@@ -146,7 +146,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         function_body = self.visitCodeBlock(ctx.codeBlock())
 
         if function_name == "main" and is_static:
-            self.entry_point = f"\nint main(int argc, {function_params[1:]} {function_body[:-1]}return 0;\n" + "}"
+            self.entry_point = f"\nint main(int argc, {function_params[1:]} {function_body[:-1]}return 0;\n}}"
             return ""
 
         in_class_name = f"{self.SCOPE_TRANSLATOR[scope]}{function_name}"
@@ -158,11 +158,23 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             )
             return ""
 
+        method_definition = f"void* {global_name}(void** args) {{\n"
+        for index, param in enumerate(function_params.strip('()').split(', ')):
+            param_decomposed = param.split(' ')
+            method_definition += f"{param} = *(({param_decomposed[0]}*) args[{index}]);\n"
+
+        if function_return_type == 'void':
+            method_definition += f"{function_body[1:]}"
+        else:
+            # TODO one problem with returning value as it is eg. return 123; - probably we should "if" it
+            func_body_return_split = function_body[1:].split('return')
+            method_definition += "return (void)* &".join(func_body_return_split)
+
         self.function_prototypes.append(
-            f"{function_return_type} {global_name}{function_params} {function_body}\n"
+            method_definition + '\n'
         )
 
-        return f"    {function_return_type} (*{in_class_name}){function_params};\n"
+        return ""
 
     def visitFunctionReturnType(self, ctx: LanguageTestParser.FunctionReturnTypeContext):
         return self.visitTypeSpecifier(ctx.typeSpecifier())
@@ -175,7 +187,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         param_declarations = []
 
         if not is_static:
-            param_declarations.append(f"{self.current_class} *self")
+            param_declarations.append(f"{self.current_class}* self")
 
         # This checks if there are any parameters
         if ctx:
@@ -235,13 +247,12 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         return self.visitAssignmentExpression(ctx.assignmentExpression())
 
     def visitAssignmentExpression(self, ctx: LanguageTestParser.AssignmentExpressionContext):
-        is_conditional = ctx.conditionalExpression() is not None
-
-        if is_conditional:
+        if ctx.conditionalExpression() is not None:
             return self.visitConditionalExpression(ctx.conditionalExpression())
         else:
             # TODO: Assignment expression
             # Other cases
+            # I think it would work just fine like this (?)
             return self.visitChildren(ctx)
 
     def visitConditionalExpression(self, ctx: LanguageTestParser.ConditionalExpressionContext):
