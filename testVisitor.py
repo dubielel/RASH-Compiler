@@ -98,13 +98,12 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     def createNewMethod(self, ctx: LanguageTestParser.ClassDefinitionContext):
         c_method_new = ""
-        print("a")
 
         class_name = self.visitIdentifier(ctx.nameIdentifier())
         class_body = ctx.classBody()
         methods_declarations = class_body.classMethodDefinition()
 
-        c_method_new += f"{class_name}* new__{class_name}(void** args, int args_count) {{\n" \
+        c_method_new += f"{class_name}* new__{class_name}() {{\n" \
                         f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name});\n" \
                         f"    obj.methods = init_methods_map({len(methods_declarations)});\n"  # also static are counted
 
@@ -118,7 +117,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             c_method_new += f"    insert_methods_map(obj.methods, \"{function_name}\"," \
                             f" {self.current_class}_{self.SCOPE_TRANSLATOR[scope]}{function_name});\n"
 
-        c_method_new += f"    return obj;"
+        c_method_new += f"    return obj; \n"
         c_method_new += "}\n"
 
         self.function_prototypes.append(c_method_new)
