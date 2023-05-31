@@ -400,6 +400,10 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
         return identifier + res[len(identifier) + 1:]
 
+    def visitObjectDeclaration(self, ctx: LanguageTestParser.ObjectDeclarationContext):
+        # TODO new
+        pass
+
     # Overrides --------------------------------------------------------------------------------------------------------
 
     def visitTerminal(self, node):

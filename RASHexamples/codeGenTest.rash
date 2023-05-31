@@ -29,6 +29,8 @@ class Program {
                 print(x);
             }
         }
+
+        var obj: Classname = new ClassName();
     }
 }
 
