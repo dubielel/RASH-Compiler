@@ -10,7 +10,7 @@ class Program {
         return parameter.toString();
     }
 
-    private func testFunc() -> int {
+    public func testFunc() -> int {
         var ternaryOperatorResult: int = 12 == 12 ? 1 : 2;
         return 123;
     }
@@ -30,7 +30,8 @@ class Program {
             }
         }
 
-        var obj: Classname = new ClassName();
+        var obj: Classname = new ClassName("djh", 145);
+        obj.__init__("djh", 145);
     }
 }
 

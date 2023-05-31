@@ -35,11 +35,12 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     def visitParse(self, ctx):
         program = self.visitChildren(ctx)
+        methods_map_import = "#include \"../cutils/methods_map.h\""
         libraries = "\n".join([f"#include<{lib}>" for lib in self.libraries])
         typedefs = "\n".join(self.typedefs)
         static_vars = "\n".join(self.static_vars)
         prototypes = "\n".join(self.function_prototypes)
-        program_parts = [libraries, typedefs, program, static_vars, prototypes, self.entry_point]
+        program_parts = [methods_map_import, libraries, typedefs, program, static_vars, prototypes, self.entry_point]
 
         return "\n\n".join(program_parts)
 
@@ -97,13 +98,14 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     def createNewMethod(self, ctx: LanguageTestParser.ClassDefinitionContext):
         c_method_new = ""
-        params = ""
-        args = ""
-        has_init = False
 
         class_name = self.visitIdentifier(ctx.nameIdentifier())
         class_body = ctx.classBody()
         methods_declarations = class_body.classMethodDefinition()
+
+        c_method_new += f"{class_name}* new__{class_name}() {{\n" \
+                        f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name});\n" \
+                        f"    obj.methods = init_methods_map({len(methods_declarations)});\n"  # also static are counted
 
         for methods_declaration in methods_declarations:
             if methods_declaration.KW_STATIC() is not None:
@@ -112,21 +114,9 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             scope = self.visitScope(methods_declaration.scope())
             function_definition = methods_declaration.functionDefinition()
             function_name = self.visitIdentifier(function_definition.nameIdentifier())
-            c_method_new += f"    obj.{function_name} = " \
-                            f" {self.current_class}_{self.SCOPE_TRANSLATOR[scope]}{function_name};\n"
+            c_method_new += f"    insert_methods_map(obj.methods, \"{function_name}\"," \
+                            f" {self.current_class}_{self.SCOPE_TRANSLATOR[scope]}{function_name});\n"
 
-            if function_name == '__init__':
-                has_init = True
-                param_declaration_list = function_definition.functionParams().paramDeclarationList()
-                params = self.visitParamDeclarationList(param_declaration_list, True)
-                args = ','.join([param.split(' ')[-1] for param in params.split(',')])
-                print(args)
-
-        c_method_new = f"{class_name}* new__{class_name}({params}) {{\n" \
-                       f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name});\n" + c_method_new
-
-        if has_init:
-            c_method_new += f"    obj.__init__(obj,{args});\n"
         c_method_new += f"    return obj; \n"
         c_method_new += "}\n"
 
@@ -134,6 +124,8 @@ class RASHTestVisitor(LanguageTestParserVisitor):
 
     def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext):
         c_class_body = " {\n"
+
+        c_class_body += "    METHODS_MAP* methods;\n"
 
         for attributeDeclaration in ctx.classAttributeDeclaration():
             c_class_body += self.visitClassAttributeDeclaration(attributeDeclaration)
@@ -195,11 +187,23 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             )
             return ""
 
+        method_definition = f"void* {global_name}(void** args) {{\n"
+        for index, param in enumerate(function_params.strip('()').split(', ')):
+            param_decomposed = param.split(' ')
+            method_definition += f"{param} = *(({param_decomposed[0]}*) args[{index}]);\n"
+
+        if function_return_type == 'void':
+            method_definition += f"{function_body[1:]}"
+        else:
+            # TODO one problem with returning value as it is eg. return 123; - probably we should "if" it
+            func_body_return_split = function_body[1:].split('return')
+            method_definition += "return (void)* &".join(func_body_return_split)
+
         self.function_prototypes.append(
-            f"{function_return_type} {global_name}{function_params} {function_body}\n"
+            method_definition + '\n'
         )
 
-        return f"    {function_return_type} (*{in_class_name}){function_params};\n"
+        return ""
 
     def visitFunctionReturnType(self, ctx: LanguageTestParser.FunctionReturnTypeContext):
         return self.visitTypeSpecifier(ctx.typeSpecifier())
@@ -219,7 +223,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             for param_decl in ctx.paramDeclaration():
                 param_declarations.append(self.visitParamDeclaration(param_decl))
 
-        return ",".join(param_declarations)
+        return ", ".join(param_declarations)
 
     def visitParamDeclaration(self, ctx: LanguageTestParser.ParamDeclarationContext):
 
@@ -394,6 +398,17 @@ class RASHTestVisitor(LanguageTestParserVisitor):
                 return f"printf(\"%s\\n\", {expr_value})"
 
         return identifier + res[len(identifier) + 1:]
+
+    def visitObjectDeclaration(self, ctx: LanguageTestParser.ObjectDeclarationContext):
+        res = self.visitChildren(ctx)
+        print(type(res))
+
+        if ctx.nameIdentifier():
+            name_identifier = self.visitNameIdentifier(ctx.nameIdentifier())
+            return f"new__{name_identifier}{res[res.index('('):]}"
+        else:
+            simple_type_specifier = self.visitSimpleTypeSpecifier(ctx.simpleTypeSpecifier())
+            return f"({simple_type_specifier}*) malloc(sizeof({simple_type_specifier}));"
 
     # Overrides --------------------------------------------------------------------------------------------------------
 
