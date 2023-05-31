@@ -5,6 +5,11 @@ int foo(int a, int b) {
     return a + b;
 }
 
+struct data
+{
+    int (*func)(int a, int b)
+};
+
 void* addIntegers(void** args) {
     int a = *((int*) args[0]);
     int b = *((int*) args[1]);
@@ -23,4 +28,9 @@ int main(void) {
     printf("%d", *((int*) call_method_methods_map(methods_map, "addIntegers")(((void*[2]){&(int){1}, &(int){2}}))));
 
     delete_methods_map(methods_map);
+
+    struct data a;
+    a.func = foo;
+
+    printf("%d", a.func(2, 3));
 }
