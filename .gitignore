@@ -161,3 +161,6 @@ cython_debug/
 
 .antlr/
 gen/
+
+# result files
+result*
