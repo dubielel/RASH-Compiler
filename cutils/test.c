@@ -20,7 +20,7 @@ int main(void) {
     insert_methods_map(methods_map, "addIntegers", addIntegers);
     printf("p");
 
-    printf("%d", *((int*) call_method_methods_map(methods_map, "addIntegers")((void*)((void*[2]){&(int){1}, &(int){2}}))));
+    printf("%d", *((int*) call_method_methods_map(methods_map, "addIntegers")(((void*[2]){&(int){1}, &(int){2}}))));
 
     delete_methods_map(methods_map);
 }
