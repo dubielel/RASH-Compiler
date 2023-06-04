@@ -77,8 +77,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             return self.RASH_C_TYPE_MAP[self.visitSimpleTypeSpecifier(ctx.simpleTypeSpecifier())] + array_dim * "*"
 
     def visitCodeBlock(self, ctx: LanguageTestParser.CodeBlockContext):
-        res = "{\n" + "\n".join(str(self.visitStatement(s)) for s in ctx.statement()) + "\n}"
-        return res
+        return "{\n" + "\n".join(str(self.visitStatement(s)) for s in ctx.statement()) + "\n}"
 
     # Classes ----------------------------------------------------------------------------------------------------------
 
@@ -92,8 +91,46 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         c_class_definition = f"struct s_{class_name}"
         c_class_definition += self.visitClassBody(ctx.classBody())
         c_class_definition += f";\n"
+        self.createNewMethod(ctx)
 
         return c_class_definition
+
+    def createNewMethod(self, ctx: LanguageTestParser.ClassDefinitionContext):
+        c_method_new = ""
+        params = ""
+        args = ""
+        has_init = False
+
+        class_name = self.visitIdentifier(ctx.nameIdentifier())
+        class_body = ctx.classBody()
+        methods_declarations = class_body.classMethodDefinition()
+
+        for methods_declaration in methods_declarations:
+            if methods_declaration.KW_STATIC() is not None:
+                continue
+
+            scope = self.visitScope(methods_declaration.scope())
+            function_definition = methods_declaration.functionDefinition()
+            function_name = self.visitIdentifier(function_definition.nameIdentifier())
+            c_method_new += f"    obj.{function_name} = " \
+                            f" {self.current_class}_{self.SCOPE_TRANSLATOR[scope]}{function_name};\n"
+
+            if function_name == '__init__':
+                has_init = True
+                param_declaration_list = function_definition.functionParams().paramDeclarationList()
+                params = self.visitParamDeclarationList(param_declaration_list, True)
+                args = ','.join([param.split(' ')[-1] for param in params.split(',')])
+                print(args)
+
+        c_method_new = f"{class_name}* new__{class_name}({params}) {{\n" \
+                       f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name});\n" + c_method_new
+
+        if has_init:
+            c_method_new += f"    obj.__init__(obj,{args});\n"
+        c_method_new += f"    return obj; \n"
+        c_method_new += "}\n"
+
+        self.function_prototypes.append(c_method_new)
 
     def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext):
         c_class_body = " {\n"
@@ -146,7 +183,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         function_body = self.visitCodeBlock(ctx.codeBlock())
 
         if function_name == "main" and is_static:
-            self.entry_point = f"\nint main(int argc, {function_params[1:]} {function_body[:-1]}return 0;\n" + "}"
+            self.entry_point = f"\nint main(int argc, {function_params[1:]} {function_body[:-1]}return 0;\n}}"
             return ""
 
         in_class_name = f"{self.SCOPE_TRANSLATOR[scope]}{function_name}"
@@ -175,14 +212,14 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         param_declarations = []
 
         if not is_static:
-            param_declarations.append(f"{self.current_class} *self")
+            param_declarations.append(f"{self.current_class}* self")
 
         # This checks if there are any parameters
         if ctx:
             for param_decl in ctx.paramDeclaration():
                 param_declarations.append(self.visitParamDeclaration(param_decl))
 
-        return ", ".join(param_declarations)
+        return ",".join(param_declarations)
 
     def visitParamDeclaration(self, ctx: LanguageTestParser.ParamDeclarationContext):
 
@@ -235,13 +272,12 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         return self.visitAssignmentExpression(ctx.assignmentExpression())
 
     def visitAssignmentExpression(self, ctx: LanguageTestParser.AssignmentExpressionContext):
-        is_conditional = ctx.conditionalExpression() is not None
-
-        if is_conditional:
+        if ctx.conditionalExpression() is not None:
             return self.visitConditionalExpression(ctx.conditionalExpression())
         else:
             # TODO: Assignment expression
             # Other cases
+            # I think it would work just fine like this (?)
             return self.visitChildren(ctx)
 
     def visitConditionalExpression(self, ctx: LanguageTestParser.ConditionalExpressionContext):

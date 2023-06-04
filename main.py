@@ -23,7 +23,7 @@ def main():
     visitor = RASHTestVisitor()
     result = visitor.visit(tree)
     with open("result.c", "w+") as f:
-        f.write(result)
+        f.write(result) 
 
 
 if __name__ == '__main__':
