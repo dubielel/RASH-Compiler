@@ -5,9 +5,8 @@ class Program {
     private var variableWithAssign: str = "test";
     protected var variable: bool;
 
-    public static func staticTestFunc(parameter: int) -> str {
-        print(parameter);
-        return parameter.toString();
+    public static func staticTestFunc() -> int {
+        staticVarWithAssign += 1;
     }
 
     private func testFunc() -> int {
@@ -30,7 +29,7 @@ class Program {
             }
         }
 
-        var obj: Classname = new ClassName();
+        var obj: ClassName = new ClassName("test", 123);
     }
 }
 
@@ -47,7 +46,7 @@ class ClassName2 {
     private var attr1: str;
 	public var attr2: int;
 
-	public func __init__(param1: str, param2: int) -> ClassName {
+	public func __init__(param1: str, param2: int) -> ClassName2 {
 	    // TODO
 	}
 }

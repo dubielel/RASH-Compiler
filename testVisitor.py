@@ -1,5 +1,210 @@
 from gen.LanguageTestParser import LanguageTestParser
 from gen.LanguageTestParserVisitor import LanguageTestParserVisitor
+from typing import Optional
+from enum import Enum
+from dataclasses import dataclass
+
+
+class Scope(Enum):
+    PUBLIC = 1
+    PROTECTED = 2
+    PRIVATE = 3
+
+
+@dataclass
+class FunctionContainer:
+    identifier: str
+    return_type: str
+    params: str
+    scope: Scope
+    body: str
+    class_name: str
+    is_new: bool = False
+
+    @property
+    def name(self):
+        scope_map = {Scope.PUBLIC: "", Scope.PROTECTED: "pr_", Scope.PRIVATE: "pv_"}
+        return f"{scope_map[self.scope]}{self.identifier}"
+
+    @name.setter
+    def name(self, value):
+        raise AttributeError("Cannot set name of FunctionContainer")
+
+    def get_in_struct_declaration(self):
+        return f"{self.return_type} (*{self.name}){self.params};"
+
+    def get_global_declaration(self):
+        if self.is_new:
+            return f"{self.return_type} new__{self.class_name}{self.params};"
+        return f"{self.return_type} {self.class_name}_{self.name}{self.params};"
+
+    def get_definition(self):
+        if self.is_new:
+            return f"{self.return_type} new__{self.class_name}{self.params} {self.body}"
+        return f"{self.return_type} {self.class_name}_{self.name}{self.params} {self.body}"
+
+    def get_entry_point_definition(self):
+        return f"{self.return_type} {self.name}{self.params} {self.body}"
+
+
+@dataclass
+class VariableContainer:
+    identifier: str
+    type: str
+    value: Optional[str]
+    scope: Scope
+    class_name: str
+
+    @property
+    def name(self):
+        scope_map = {Scope.PUBLIC: "", Scope.PROTECTED: "pr_", Scope.PRIVATE: "pv_"}
+        return f"{scope_map[self.scope]}{self.identifier}"
+
+    @name.setter
+    def name(self, value):
+        raise AttributeError("Cannot set name of AttributeContainer")
+
+    def get_static_declaration(self):
+        return f"{self.class_name}_{self.type} {self.name}"
+
+    def get_static_definition(self):
+        if self.value is None:
+            return f"{self.class_name}_{self.type} {self.name};"
+        else:
+            return f"{self.class_name}_{self.type} {self.name} = {self.value};"
+
+    def get_declaration(self):
+        return f"{self.type} {self.name};"
+
+    def get_definition(self):
+        if self.value is None:
+            return f"{self.type} {self.name};"
+        else:
+            return f"{self.type} {self.name} = {self.value};"
+
+
+class ClassContainer:
+    has_init: bool
+    name: str
+    methods: dict[str, FunctionContainer]
+    attributes: dict[str, VariableContainer]
+
+    static_methods: dict[str, FunctionContainer]
+    static_attributes: dict[str, VariableContainer]
+
+    library_dependencies: set[str]
+
+    def __init__(self, name: str):
+        self.name = name
+        self.methods = {}
+        self.attributes = {}
+        self.static_methods = {}
+        self.static_attributes = {}
+        self.has_init = False
+        self.library_dependencies = set()
+
+    def add_attribute(self, attribute: VariableContainer, is_static: bool = False):
+        if is_static:
+            self.static_attributes[attribute.identifier] = attribute
+        else:
+            self.attributes[attribute.identifier] = attribute
+
+    def add_method(self, method: FunctionContainer, is_static: bool = False):
+        if method.identifier == "__init__":
+            self.has_init = True
+
+        if is_static:
+            self.static_methods[method.identifier] = method
+        else:
+            self.methods[method.identifier] = method
+
+    def add_library_dependency(self, lib: str):
+        self.library_dependencies.add(lib)
+
+    def create_new_method(self) -> FunctionContainer:
+        self.library_dependencies.add("stdlib.h")
+
+        body = f"{{\n\t{self.name}* this = ({self.name}*)malloc(sizeof({self.name}));\n"
+
+        for name, method in self.methods.items():
+            body += f"\tthis->{name} = {self.name}_{name};\n"
+
+        if self.has_init:
+            init_method = self.methods["__init__"]
+            init_params = init_method.params.split(", ")
+            init_params = [p.split(" ")[1] for p in init_params]
+            body += f"\tthis->{init_method.name}{init_params};\n\treturn this;\n}}"
+            return FunctionContainer(
+                f"new__{self.name}",
+                self.name + "*",
+                init_method.params,
+                init_method.scope,
+                body,
+                self.name,
+                is_new=True,
+            )
+
+        body += "\treturn this;\n}}"
+
+        return FunctionContainer(
+            f"new__{self.name}",
+            self.name + "*",
+            "()",
+            Scope.PRIVATE,
+            body,
+            self.name,
+            is_new=True,
+        )
+
+    def save_class(self):
+        header_path = f"{self.name}.h"
+        source_path = f"{self.name}.c"
+
+        new_method = self.create_new_method()
+
+        with open(header_path, "w+") as f:
+            f.write(f"#ifndef {self.name.upper()}_H\n")
+            f.write(f"#define {self.name.upper()}_H\n\n")
+
+            for lib in self.library_dependencies:
+                f.write(f"#include<{lib}>\n")
+
+            f.write(f"\n")
+            f.write(f"typedef s_{self.name} {self.name};\n\n")
+
+            f.write(f"struct s_{self.name} {{\n")
+            for attribute in self.attributes.values():
+                f.write(f"\t{attribute.get_definition()}\n")
+            for method in self.methods.values():
+                f.write(f"\t{method.get_in_struct_declaration()}\n")
+            f.write(f"}};\n\n")
+
+            for method in self.methods.values():
+                f.write(f"{method.get_global_declaration()}\n")
+
+            for method in self.static_methods.values():
+                f.write(f"{method.get_global_declaration()}\n")
+
+            for attribute in self.static_attributes.values():
+                f.write(f"{attribute.get_static_declaration()}\n")
+
+            f.write(f"{new_method.get_global_declaration()}\n")
+            f.write(f"\n#endif\n")
+
+        with open(source_path, "w+") as f:
+            f.write(f"#include<{header_path}>\n\n")
+
+            for method in self.methods.values():
+                f.write(f"{method.get_definition()}\n\n")
+
+            for attribute in self.static_attributes.values():
+                if attribute.value is not None:
+                    f.write(f"{attribute.get_static_definition()}\n\n")
+
+            for method in self.static_methods.values():
+                f.write(f"{method.get_definition()}\n\n")
+
+            f.write(f"{new_method.get_definition()}\n\n")
 
 
 class RASHTestVisitor(LanguageTestParserVisitor):
@@ -7,41 +212,44 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         "int": "int",
         "float": "float",
         "str": "char*",
-        "bool": "bool",
+        "bool": "int",
         "void": "void",
     }
 
     SCOPE_TRANSLATOR = {
-        "public": "",
-        "protected": "pr_",
-        "private": "pv_",
+        "public": Scope.PUBLIC,
+        "protected": Scope.PROTECTED,
+        "private": Scope.PRIVATE,
     }
 
-    INDENT_SIZE = 4
+    entry_point: Optional[FunctionContainer]
 
-    typedefs = []
-    static_vars = []
-    function_prototypes = []
-    current_class = ""
-    entry_point = ""
+    current_class_name: str = ""
+    classes: dict[str, ClassContainer] = {}
 
-    indent = 0
-
-    # TODO: Variables
-    # Variables that are in scope must be stored with their types,
-    # e.g. for printf() function
     variables = {}
-    libraries = set()
+
+    def __init__(self, dir: str):
+        self.entry_point = None
+        self.dir = dir
 
     def visitParse(self, ctx):
-        program = self.visitChildren(ctx)
+        self.visitChildren(ctx)
+        """
         libraries = "\n".join([f"#include<{lib}>" for lib in self.libraries])
         typedefs = "\n".join(self.typedefs)
         static_vars = "\n".join(self.static_vars)
         prototypes = "\n".join(self.function_prototypes)
-        program_parts = [libraries, typedefs, program, static_vars, prototypes, self.entry_point]
+        # program_parts = [libraries, typedefs, program, static_vars, prototypes, self.entry_point]
+        # return "\n\n".join(program_parts)
+        """
 
-        return "\n\n".join(program_parts)
+        for class_name, class_container in self.classes.items():
+            class_container.save_class()
+
+        libraries = "\n".join([f"#include<{class_container.name}.h>" for class_container in self.classes.values()])
+        entry_point = self.entry_point.get_entry_point_definition() if self.entry_point is not None else ""
+        return f"{libraries}\n\n{entry_point}"
 
     def visitImportStatement(self, ctx: LanguageTestParser.ImportStatementContext):
         # TODO: Imports
@@ -50,7 +258,8 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         # For now, this returns nothing, we must do it later.
         pass
 
-    # Parts of parser that evaluate only to their text -----------------------------------------------------------------
+    # region Parts of parser that evaluate only to their text
+    # ------------------------------------------------------------------------------------------------------------------
 
     def visitNameIdentifier(self, ctx: LanguageTestParser.NameIdentifierContext):
         return ctx.getText()
@@ -59,6 +268,10 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         return ctx.getText()
 
     def visitIdentifier(self, ctx: LanguageTestParser.IdentifierContext):
+        if self.current_class_name == "":
+            return ctx.getText()
+        if ctx.getText() in self.classes[self.current_class_name].static_attributes:
+            return f"{self.current_class_name}_{ctx.getText()}"
         return ctx.getText()
 
     def visitUnaryOperator(self, ctx: LanguageTestParser.UnaryOperatorContext):
@@ -67,7 +280,10 @@ class RASHTestVisitor(LanguageTestParserVisitor):
     def visitScope(self, ctx: LanguageTestParser.ScopeContext):
         return ctx.getText()
 
-    # Uncategorized ----------------------------------------------------------------------------------------------------
+    # endregion
+
+    # region Uncategorized
+    # ------------------------------------------------------------------------------------------------------------------
 
     def visitTypeSpecifier(self, ctx: LanguageTestParser.TypeSpecifierContext):
         array_dim = 0 if not ctx.arrayBrackets() else len(ctx.arrayBrackets())
@@ -79,127 +295,71 @@ class RASHTestVisitor(LanguageTestParserVisitor):
     def visitCodeBlock(self, ctx: LanguageTestParser.CodeBlockContext):
         return "{\n" + "\n".join(str(self.visitStatement(s)) for s in ctx.statement()) + "\n}"
 
-    # Classes ----------------------------------------------------------------------------------------------------------
+    # endregion
+
+    # region Classes
+    # ------------------------------------------------------------------------------------------------------------------
 
     def visitClassDefinition(self, ctx: LanguageTestParser.ClassDefinitionContext):
 
         class_name = self.visitIdentifier(ctx.nameIdentifier())
-        self.current_class = class_name
 
-        self.typedefs.append(f"typedef struct s_{class_name} {class_name};")
+        self.classes[class_name] = ClassContainer(class_name)
+        self.current_class_name = class_name
 
-        c_class_definition = f"struct s_{class_name}"
-        c_class_definition += self.visitClassBody(ctx.classBody())
-        c_class_definition += f";\n"
-        self.createNewMethod(ctx)
+        self.visitClassBody(ctx.classBody())
 
-        return c_class_definition
-
-    def createNewMethod(self, ctx: LanguageTestParser.ClassDefinitionContext):
-        c_method_new = ""
-        params = ""
-        args = ""
-        has_init = False
-
-        class_name = self.visitIdentifier(ctx.nameIdentifier())
-        class_body = ctx.classBody()
-        methods_declarations = class_body.classMethodDefinition()
-
-        for methods_declaration in methods_declarations:
-            if methods_declaration.KW_STATIC() is not None:
-                continue
-
-            scope = self.visitScope(methods_declaration.scope())
-            function_definition = methods_declaration.functionDefinition()
-            function_name = self.visitIdentifier(function_definition.nameIdentifier())
-            c_method_new += f"    obj.{function_name} = " \
-                            f" {self.current_class}_{self.SCOPE_TRANSLATOR[scope]}{function_name};\n"
-
-            if function_name == '__init__':
-                has_init = True
-                param_declaration_list = function_definition.functionParams().paramDeclarationList()
-                params = self.visitParamDeclarationList(param_declaration_list, True)
-                args = ','.join([param.split(' ')[-1] for param in params.split(',')])
-                print(args)
-
-        c_method_new = f"{class_name}* new__{class_name}({params}) {{\n" \
-                       f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name});\n" + c_method_new
-
-        if has_init:
-            c_method_new += f"    obj.__init__(obj,{args});\n"
-        c_method_new += f"    return obj; \n"
-        c_method_new += "}\n"
-
-        self.function_prototypes.append(c_method_new)
-
-    def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext):
-        c_class_body = " {\n"
-
+    def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext) -> None:
         for attributeDeclaration in ctx.classAttributeDeclaration():
-            c_class_body += self.visitClassAttributeDeclaration(attributeDeclaration)
+            self.visitClassAttributeDeclaration(attributeDeclaration)
 
         for methodDeclaration in ctx.classMethodDefinition():
-            c_class_body += self.visitClassMethodDefinition(methodDeclaration)
+            self.visitClassMethodDefinition(methodDeclaration)
 
-        c_class_body += "}"
+    def visitClassAttributeDeclaration(self, ctx: LanguageTestParser.ClassAttributeDeclarationContext) -> None:
+        var_decl = ctx.variableDeclStatement()
 
-        return c_class_body
+        var_type = self.visitTypeSpecifier(var_decl.typeSpecifier())
+        var_identifier = self.visitNameIdentifier(var_decl.nameIdentifier())
+        var_expression = self.visitExpression(var_decl.expression()) if var_decl.expression() else None
+        var_scope = self.SCOPE_TRANSLATOR[self.visitScope(ctx.scope())]
 
-    def visitClassAttributeDeclaration(self, ctx: LanguageTestParser.ClassAttributeDeclarationContext):
-        var_decl_statement = ctx.variableDeclStatement()
-        var_type = self.visitTypeSpecifier(var_decl_statement.typeSpecifier())
-        var_identifier = self.visitNameIdentifier(var_decl_statement.nameIdentifier())
-        var_expression = self.visitExpression(
-            var_decl_statement.expression()) if var_decl_statement.expression() else None
-        var_scope = self.visitScope(ctx.scope())
+        variable_container = VariableContainer(var_identifier, var_type, var_expression,
+                                               var_scope, self.current_class_name)
 
         if ctx.KW_STATIC():
-            if var_expression:
-                self.static_vars.append(
-                    f"{var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier} = {var_expression};\n"
-                )
-            else:
-                self.static_vars.append(
-                    f"{var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier};\n"
-                )
-            return ""
-
-        # TODO solve the situation when we declare and initialize attribute -> method new?
-        return f"    {var_type} {self.SCOPE_TRANSLATOR[var_scope] + var_identifier};\n"
+            self.classes[self.current_class_name].add_attribute(variable_container, True)
+        else:
+            self.classes[self.current_class_name].add_attribute(variable_container)
 
     # Functions and methods --------------------------------------------------------------------------------------------
 
-    def visitClassMethodDefinition(self, ctx: LanguageTestParser.ClassMethodDefinitionContext):
+    def visitClassMethodDefinition(self, ctx: LanguageTestParser.ClassMethodDefinitionContext) -> None:
         static = ctx.KW_STATIC() is not None
         method_scope = self.visitScope(ctx.scope())
-        return self.visitFunctionDefinition(ctx.functionDefinition(), method_scope, static)
+        self.visitFunctionDefinition(ctx.functionDefinition(), method_scope, static)
 
     def visitFunctionDefinition(self, ctx: LanguageTestParser.FunctionDefinitionContext, scope: str = "public",
                                 is_static: bool = False):
 
-        function_name = self.visitIdentifier(ctx.nameIdentifier())
+        function_identifier = self.visitIdentifier(ctx.nameIdentifier())
         function_return_type = self.visitFunctionReturnType(ctx.functionReturnType())
         function_params = self.visitFunctionParams(ctx.functionParams(), is_static)
         function_body = self.visitCodeBlock(ctx.codeBlock())
 
-        if function_name == "main" and is_static:
-            self.entry_point = f"\nint main(int argc, {function_params[1:]} {function_body[:-1]}return 0;\n}}"
-            return ""
+        function_container = FunctionContainer(function_identifier, function_return_type, function_params,
+                                               self.SCOPE_TRANSLATOR[scope], function_body, self.current_class_name)
 
-        in_class_name = f"{self.SCOPE_TRANSLATOR[scope]}{function_name}"
-        global_name = f"{self.current_class}_{in_class_name}"
+        if function_identifier == "main" and is_static:
+            self.entry_point = FunctionContainer("main", "int", f"(int argc, {function_params[1:]}",
+                                                 Scope.PUBLIC, f"{function_body[:-1]}return 0;\n}}",
+                                                 self.current_class_name)
+            return
 
         if is_static:
-            self.function_prototypes.append(
-                f"{function_return_type} {in_class_name}{function_params} {function_body}\n"
-            )
-            return ""
-
-        self.function_prototypes.append(
-            f"{function_return_type} {global_name}{function_params} {function_body}\n"
-        )
-
-        return f"    {function_return_type} (*{in_class_name}){function_params};\n"
+            self.classes[self.current_class_name].add_method(function_container, True)
+        else:
+            self.classes[self.current_class_name].add_method(function_container)
 
     def visitFunctionReturnType(self, ctx: LanguageTestParser.FunctionReturnTypeContext):
         return self.visitTypeSpecifier(ctx.typeSpecifier())
@@ -212,14 +372,14 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         param_declarations = []
 
         if not is_static:
-            param_declarations.append(f"{self.current_class}* self")
+            param_declarations.append(f"{self.current_class_name}* self")
 
         # This checks if there are any parameters
         if ctx:
             for param_decl in ctx.paramDeclaration():
                 param_declarations.append(self.visitParamDeclaration(param_decl))
 
-        return ",".join(param_declarations)
+        return ", ".join(param_declarations)
 
     def visitParamDeclaration(self, ctx: LanguageTestParser.ParamDeclarationContext):
 
@@ -243,8 +403,10 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         var_identifier = self.visitIdentifier(ctx.nameIdentifier())
         var_value = self.visitExpression(ctx.expression())
 
-        self.variables[var_identifier] = var_type
+        if var_type not in self.RASH_C_TYPE_MAP:
+            var_type = var_type + "*"
 
+        self.variables[var_identifier] = var_type
         return f"{var_type} {var_identifier} = {var_value}"
 
     def visitLoopStatement(self, ctx: LanguageTestParser.LoopStatementContext):
@@ -374,10 +536,10 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         res = self.visitChildren(ctx)
 
         if identifier == "print":
-            self.libraries.add("stdio.h")
+            self.classes[self.current_class_name].add_library_dependency("stdio.h")
 
-            expr = ctx.expression(0)
-            expr_value = self.visitExpression(expr)
+            params = self.visitFunctionCallParams(ctx.functionCallParams())
+            expr_value = params[1:-1].split(", ")[0].strip()
 
             if expr_value in self.variables:
                 # If the expression is a variable name, we need to get its type
@@ -394,6 +556,17 @@ class RASHTestVisitor(LanguageTestParserVisitor):
                 return f"printf(\"%s\\n\", {expr_value})"
 
         return identifier + res[len(identifier) + 1:]
+
+    def visitObjectDeclaration(self, ctx: LanguageTestParser.ObjectDeclarationContext):
+        type = self.visitIdentifier(ctx.nameIdentifier())
+        params = self.visitFunctionCallParams(ctx.functionCallParams())
+        return f"new__{type}{params}"
+
+    def visitFunctionCallParams(self, ctx: LanguageTestParser.FunctionCallParamsContext):
+        params = []
+        for expr in ctx.expression():
+            params.append(self.visitExpression(expr))
+        return "(" + ", ".join(params) + ")"
 
     # Overrides --------------------------------------------------------------------------------------------------------
 

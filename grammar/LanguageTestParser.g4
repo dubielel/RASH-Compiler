@@ -26,7 +26,11 @@ arrayDeclaration
     ;
 
 objectDeclaration
-    :   KW_NEW (nameIdentifier | simpleTypeSpecifier) LPAREN ( expression ( COMMA expression )* )? RPAREN
+    :   KW_NEW (nameIdentifier | simpleTypeSpecifier) functionCallParams
+    ;
+
+functionCallParams
+    :   LPAREN ( expression ( COMMA expression )* )? RPAREN
     ;
 
 primaryExpression
@@ -123,7 +127,7 @@ functionReturnType
     ;
 
 functionCall
-    :   identifier LPAREN ( expression ( COMMA expression )* )? RPAREN
+    :   identifier functionCallParams
     ;
 
 //CLASSES

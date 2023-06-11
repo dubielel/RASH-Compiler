@@ -1,7 +1,6 @@
 from gen.LanguageTestLexer import LanguageTestLexer
 from gen.LanguageTestParser import LanguageTestParser
-from gen.LanguageTestParserVisitor import LanguageTestParserVisitor
-from gen.LanguageTestParserListener import LanguageTestParserListener
+
 from antlr4 import *
 
 from testVisitor import RASHTestVisitor
@@ -14,13 +13,7 @@ def main():
     parser = LanguageTestParser(stream)
     tree = parser.parse()
 
-    # print(tree.toStringTree(recog=parser))
-
-    # walker = ParseTreeWalker()
-    # listener = RASHTestListener()
-    # walker.walk(listener, tree)
-
-    visitor = RASHTestVisitor()
+    visitor = RASHTestVisitor("test")
     result = visitor.visit(tree)
     with open("result.c", "w+") as f:
         f.write(result) 
