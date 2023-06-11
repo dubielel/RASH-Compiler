@@ -20,6 +20,8 @@ class RashEditor(QMainWindow):
         self.create_layout()
         self.browser_tree.doubleClicked.connect(self.open_file_from_browser)
 
+        self.create_menu(self)
+
     def create_menu(self):
         self.save_action = QAction("Save", self)
         self.save_action.setShortcut("Ctrl+S")
