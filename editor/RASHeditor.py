@@ -2,11 +2,9 @@ import sys
 import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QFileSystemModel, \
     QTreeView, QWidget, QPlainTextEdit, QSplitter, QMessageBox, QAction, QFileDialog
-from PyQt5.QtCore import QProcess, QDir, Qt
-import PyQt5.sip
+from PyQt5.QtCore import QDir, Qt
 from widgets.code_editor import CodeEditor
-from widgets.terminal import TerminalWidget
-     
+
 
 class RashEditor(QMainWindow):
     def __init__(self):
@@ -20,7 +18,7 @@ class RashEditor(QMainWindow):
         self.create_layout()
         self.browser_tree.doubleClicked.connect(self.open_file_from_browser)
 
-        self.create_menu(self)
+        self.create_menu()
 
     def create_menu(self):
         self.save_action = QAction("Save", self)

@@ -3,9 +3,8 @@ from gen.LanguageTestParser import LanguageTestParser
 
 from antlr4 import *
 import sys
-import os
 
-from testVisitor import RASHTestVisitor
+from testVisitor import RashVisitor
 
 
 def main():
@@ -15,9 +14,9 @@ def main():
         input_filename = 'RASHexamples/codeGenTest.rash'
 
     try:
-        output_filename = sys.argv[2]
+        output_dir = sys.argv[2]
     except:
-        output_filename = '.rashc/codeGenTest.rash.c'
+        output_dir = 'codeGenTest.rash.c'
 
     in_file = FileStream(input_filename)
     lexer = LanguageTestLexer(in_file)
@@ -25,15 +24,8 @@ def main():
     parser = LanguageTestParser(stream)
     tree = parser.parse()
 
-    visitor = RASHTestVisitor("test")
-    result = visitor.visit(tree)
-
-    if not os.path.isdir('.rashc'):
-        os.mkdir('.rashc')
-
-    with open(output_filename, "w+") as f:
-        f.write(result) 
-
+    visitor = RashVisitor(output_dir)
+    visitor.visit(tree)
 
 if __name__ == '__main__':
     main()

@@ -9,12 +9,26 @@ run() {
     echo $(basename $1)".c"
 }
 
+run_c() {
+	echo $1;
+    cd .rashc/$(basename "$1")".c"
+    mkdir -p build-dir
+    cd build-dir
+    cmake ..
+    make
+    ./rashProject;
+}
+
 [ $# -eq 0 ] && usage
 
-while getopts ":hf:" arg; do
+while getopts ":r:hf:" arg; do
     case "$arg" in
         f) # Run code from the file
             run "${OPTARG}"
+            ;;
+        r) # Compile with CMake, use this after -f option
+			echo "${OPTARG}"
+            run_c "${OPTARG}"
             ;;
         h | *) # Display this message
             usage
@@ -22,5 +36,4 @@ while getopts ":hf:" arg; do
             ;;
     esac
 done
-
 
