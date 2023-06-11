@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QTextEdit, QVBoxLayout, QWidget, QMessageBox, QTabWidget, QFileDialog
 from PyQt5.QtCore import Qt, QDir
-
+import typing
 
 class CodeEditor(QTabWidget):
     def __init__(self):
@@ -14,7 +14,7 @@ class CodeEditor(QTabWidget):
         self.add_tab()
 
 
-    def add_tab(self, file_path=None):
+    def add_tab(self, file_path: typing.Optional[str]=None):
         # Create a new text editor widget
         text_editor = QTextEdit()
         text_editor.textChanged.connect(lambda: self.mark_tab_as_unsaved(file_path))
@@ -26,6 +26,9 @@ class CodeEditor(QTabWidget):
         # Set the file path as the tab data
         if file_path:
             self.setTabToolTip(tab_index, file_path)
+            current_tab_widget = self.widget(tab_index)
+            current_tab_widget.setPlainText(self.get_file_content(file_path))
+            self.setTabText(tab_index, QDir.toNativeSeparators(file_path))
 
     def mark_tab_as_unsaved(self, path: str):
         current_tab_index = self.currentIndex()
@@ -39,9 +42,7 @@ class CodeEditor(QTabWidget):
             self.setTabText(current_tab_index, current_tab_text + "*")
 
     def close_tab(self, index):
-        current_tab_widget = self.widget(index)
         current_tab_text = self.tabText(index)
-
         if current_tab_text.endswith("*"):
             response = self.prompt_to_save_changes(current_tab_text)
             if response == QMessageBox.Save:
@@ -61,7 +62,7 @@ class CodeEditor(QTabWidget):
 
     def save_current_tab(self):
         if (current_index := self.currentIndex()) >= 0:
-            file_path = self.tabData(current_index)
+            file_path = self.tabText(current_index)
             if file_path:
                 self._save_file(current_index, file_path)
             else:
@@ -91,6 +92,7 @@ class CodeEditor(QTabWidget):
     def _save_file(self, current_index: int, file_name: str):
         current_tab_widget = self.widget(current_index)
         content = current_tab_widget.toPlainText()
+        file_name = file_name[:-1] if file_name.endswith('*') else file_name
         try:
             with open(file_name, "w") as file:
                 file.write(content)
@@ -98,13 +100,15 @@ class CodeEditor(QTabWidget):
             QMessageBox.warning(self, "Error", f"Failed to save file: {str(e)}")
         else:
             self.setTabText(current_index, QDir.toNativeSeparators(file_name))
-            self.setTabData(current_index, file_name)
             QMessageBox.information(self, "Success", "File saved successfully.")
 
-        tab_index = self.indexOf(file_name)
-        self.setTabText(tab_index, file_name[:-1])
+        tab_index = self.indexOf(current_tab_widget)
+        self.setTabText(tab_index, file_name)
     
     def get_file_content(self, file_path: str):
-        with open(file_path, "r") as file:
-            content = file.read()
-        return content
+        try:
+            with open(file_path, "r") as file:
+                content = file.read()
+            return content
+        except:
+            return ""
