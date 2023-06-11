@@ -307,8 +307,6 @@ class RASHTestVisitor(LanguageTestParserVisitor):
         self.classes[class_name] = ClassContainer(class_name)
         self.current_class_name = class_name
 
-        self.visitClassBody(ctx.classBody())
-
     def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext) -> None:
         for attributeDeclaration in ctx.classAttributeDeclaration():
             self.visitClassAttributeDeclaration(attributeDeclaration)
