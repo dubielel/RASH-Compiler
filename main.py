@@ -3,12 +3,24 @@ from gen.LanguageTestParser import LanguageTestParser
 from gen.LanguageTestParserVisitor import LanguageTestParserVisitor
 from gen.LanguageTestParserListener import LanguageTestParserListener
 from antlr4 import *
+import sys
+import os
 
 from testVisitor import RASHTestVisitor
 
 
 def main():
-    in_file = FileStream('RASHexamples/codeGenTest.rash')
+    try:
+        input_filename = sys.argv[1]
+    except:
+        input_filename = 'RASHexamples/codeGenTest.rash'
+
+    try:
+        output_filename = sys.argv[2]
+    except:
+        output_filename = '.rashc/codeGenTest.rash.c'
+
+    in_file = FileStream(input_filename)
     lexer = LanguageTestLexer(in_file)
     stream = CommonTokenStream(lexer)
     parser = LanguageTestParser(stream)
@@ -22,7 +34,11 @@ def main():
 
     visitor = RASHTestVisitor()
     result = visitor.visit(tree)
-    with open("result.c", "w+") as f:
+
+    if not os.path.isdir('.rashc'):
+        os.mkdir('.rashc')
+
+    with open(output_filename, "w+") as f:
         f.write(result) 
 
 

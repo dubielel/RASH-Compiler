@@ -112,7 +112,7 @@ class RASHTestVisitor(LanguageTestParserVisitor):
             scope = self.visitScope(methods_declaration.scope())
             function_definition = methods_declaration.functionDefinition()
             function_name = self.visitIdentifier(function_definition.nameIdentifier())
-            c_method_new += f"    obj.{function_name} = " \
+            c_method_new += f"    obj->{self.SCOPE_TRANSLATOR[scope]}{function_name} = " \
                             f" {self.current_class}_{self.SCOPE_TRANSLATOR[scope]}{function_name};\n"
 
             if function_name == '__init__':
@@ -120,13 +120,12 @@ class RASHTestVisitor(LanguageTestParserVisitor):
                 param_declaration_list = function_definition.functionParams().paramDeclarationList()
                 params = self.visitParamDeclarationList(param_declaration_list, True)
                 args = ','.join([param.split(' ')[-1] for param in params.split(',')])
-                print(args)
 
         c_method_new = f"{class_name}* new__{class_name}({params}) {{\n" \
-                       f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name});\n" + c_method_new
+                       f"    {class_name}* obj = ({class_name}*) malloc(sizeof({class_name}));\n" + c_method_new
 
         if has_init:
-            c_method_new += f"    obj.__init__(obj,{args});\n"
+            c_method_new += f"    obj->__init__(obj,{args});\n"
         c_method_new += f"    return obj; \n"
         c_method_new += "}\n"
 

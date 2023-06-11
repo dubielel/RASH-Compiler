@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QFil
 from PyQt5.QtCore import QProcess, QDir, Qt
 import PyQt5.sip
 from widgets.code_editor import CodeEditor
-
+from widgets.terminal import TerminalWidget
+     
 
 class RashEditor(QMainWindow):
     def __init__(self):
@@ -19,6 +20,7 @@ class RashEditor(QMainWindow):
         self.create_layout()
         self.browser_tree.doubleClicked.connect(self.open_file_from_browser)
 
+    def create_menu(self):
         self.save_action = QAction("Save", self)
         self.save_action.setShortcut("Ctrl+S")
         self.save_action.triggered.connect(self.save_file)
@@ -48,6 +50,7 @@ class RashEditor(QMainWindow):
         # Terminal
         self.terminal_output = QPlainTextEdit()
         self.terminal_output.setPlaceholderText("Terminal...")
+        self.terminal_output.setReadOnly(True)
 
         # Terminal Execute Button
         # self.execute_button = QPushButton("Execute")
@@ -73,7 +76,6 @@ class RashEditor(QMainWindow):
         terminal_widget = QWidget()
         terminal_layout = QVBoxLayout()
         terminal_layout.addWidget(self.terminal_output)
-        #terminal_layout.addWidget(self.execute_button)
         terminal_widget.setLayout(terminal_layout)
 
         # Splitter for Text Editor and Terminal
