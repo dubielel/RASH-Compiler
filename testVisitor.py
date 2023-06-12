@@ -1,9 +1,11 @@
 import os
 
-from containers.class_container import ClassContainer
+from containers.class_container import ClassContainer, AccessRestriction
 from containers.function_container import FunctionContainer
 from containers.variable_container import VariableContainer
 from enums.scope import Scope
+from exception.compiler_exceptions import ClassReferencedBeforeDefinitionException, PrivateAttributeAccessException, \
+    ProtectedAttributeAccessException
 
 from gen.LanguageTestParser import LanguageTestParser
 from gen.LanguageTestParserVisitor import LanguageTestParserVisitor
@@ -51,7 +53,8 @@ class RashVisitor(LanguageTestParserVisitor):
         class_imported_libraries = set()
         for class_container in self.classes.values():
             class_imported_libraries.update(class_container.library_dependencies)
-        libraries += "\n" + "\n".join([f"#include<{lib}>" for lib in self.library_dependencies.difference(class_imported_libraries)])
+        libraries += "\n" + "\n".join(
+            [f"#include<{lib}>" for lib in self.library_dependencies.difference(class_imported_libraries)])
         entry_point = self.entry_point.get_entry_point_definition() if self.entry_point is not None else ""
 
         with open(f"{self.dir}/main.c", "w+") as f:
@@ -90,6 +93,42 @@ class RashVisitor(LanguageTestParserVisitor):
             return ctx.getText()
         if ctx.getText() in self.classes[self.current_class_name].static_attributes:
             return f"{self.current_class_name}_{ctx.getText()}"
+        if ctx.getText() in self.classes[self.current_class_name].static_methods:
+            return f"{self.current_class_name}_{ctx.getText()}"
+
+        if len(ctx.getText().split(".")) > 1:
+            # This is a property / method accessor
+            # For now, this is only allowed for depth of 1, should be recursive
+            obj_name, property_name = ctx.getText().split(".")[:2]
+            class_name = self.variables[obj_name][:-1]
+
+            if class_name not in self.classes:
+                raise ClassReferencedBeforeDefinitionException(class_name, ctx.start.line)
+            property_scope = Scope.PUBLIC
+
+            if property_name in self.classes[class_name].attributes:
+                property_scope = self.classes[class_name].attributes[property_name].scope
+            else:
+                property_scope = self.classes[class_name].methods[property_name].scope
+
+            access = self.classes[class_name].has_access(property_scope, self.current_class_name)
+
+            if access == AccessRestriction.RESTRICTED_PRIVATE:
+                raise PrivateAttributeAccessException(property_name, ctx.start.line)
+            elif access == AccessRestriction.RESTRICTED_PROTECTED:
+                raise ProtectedAttributeAccessException(property_name, ctx.start.line)
+
+            if obj_name in self.variables:
+                return f"{obj_name}->{property_name}"
+
+        if ctx.getText() in self.classes[self.current_class_name].attributes:
+            attribute = self.classes[self.current_class_name].attributes[ctx.getText()]
+            return f"self->{attribute.name}"
+
+        if ctx.getText() in self.classes[self.current_class_name].methods:
+            method = self.classes[self.current_class_name].methods[ctx.getText()]
+            return f"self->{method.name}"
+
         return ctx.getText()
 
     def visitUnaryOperator(self, ctx: LanguageTestParser.UnaryOperatorContext):
@@ -147,6 +186,7 @@ class RashVisitor(LanguageTestParserVisitor):
 
         if ctx.KW_STATIC():
             self.classes[self.current_class_name].add_attribute(variable_container, True)
+            self.variables[f"{self.current_class_name}_{var_identifier}"] = var_type
         else:
             self.classes[self.current_class_name].add_attribute(variable_container)
 
@@ -362,6 +402,13 @@ class RashVisitor(LanguageTestParserVisitor):
         identifier = self.visitIdentifier(ctx.identifier())
         res = self.visitChildren(ctx)
 
+        if "->" in identifier:
+            # This only works for depth 1, not for nested objects, e.g. a->b->c()
+            obj_name = identifier.split("->")[0]
+            params = self.visitFunctionCallParams(ctx.functionCallParams())
+            all_params = obj_name if params == "()" else f"{obj_name}, {params[1:-1]}"
+            return f"{identifier}({all_params})"
+
         if identifier == "print":
             self.classes[self.current_class_name].add_library_dependency("stdio.h")
             self.library_dependencies.add("stdio.h")
@@ -369,21 +416,43 @@ class RashVisitor(LanguageTestParserVisitor):
             params = self.visitFunctionCallParams(ctx.functionCallParams())
             expr_value = params[1:-1].split(", ")[0].strip()
 
+            if len(expr_value.split("->")) > 1:
+                print(expr_value.split("->"))
+                # This is case where it is an object property
+                if expr_value.split("->")[0] in self.variables:
+                    # All objects are of pointer type <Class Name>* so we need to remove the last character
+                    obj_type = self.variables[expr_value.split("->")[0]][:-1]
+                    if obj_type not in self.classes:
+                        raise ClassReferencedBeforeDefinitionException(obj_type, ctx.start.line)
+
+                    attr_name = expr_value.split("->")[1]
+                    # This should be recursive, but it's not needed for now
+                    var_type = self.classes[obj_type].attributes[attr_name].type
+                    return self.printWrapper(expr_value, var_type)
+
+            if len(expr_value.split("->")) > 1:
+                attr_name = expr_value.split("->")[1]
+                if attr_name in self.classes[self.current_class_name].attributes:
+                    var_type = self.classes[self.current_class_name].attributes[attr_name].type
+                    return self.printWrapper(expr_value, var_type)
+
             if expr_value in self.variables:
                 # If the expression is a variable name, we need to get its type
                 var_type = self.variables[expr_value]
-                if var_type == "int":
-                    return f"printf(\"%d\\n\", {expr_value})"
-                elif var_type == "float":
-                    return f"printf(\"%f\\n\", {expr_value})"
-                else:
-                    return f"printf(\"%s\\n\", {expr_value})"
-
+                return self.printWrapper(expr_value, var_type)
             else:
                 # If the expression is not a variable name, we can just print it
                 return f"printf(\"%s\\n\", {expr_value})"
 
         return identifier + res[len(identifier) + 1:]
+
+    def printWrapper(self, expr_value: str, var_type: str):
+        if var_type == "int":
+            return f"printf(\"%d\\n\", {expr_value})"
+        elif var_type == "float":
+            return f"printf(\"%f\\n\", {expr_value})"
+        else:
+            return f"printf(\"%s\\n\", {expr_value})"
 
     def visitObjectDeclaration(self, ctx: LanguageTestParser.ObjectDeclarationContext):
         type = self.visitIdentifier(ctx.nameIdentifier())

@@ -1,3 +1,32 @@
+class ClassName {
+    private var attr1: str;
+	public var attr2: int;
+
+	public func __init__(param1: str, param2: int) -> ClassName {
+	    attr1 = param1;
+        attr2 = param2;
+	}
+}
+
+class ClassName2 {
+    private var attr1: str;
+	public var attr2: int;
+
+	public func __init__(param1: str, param2: int) -> ClassName2 {
+	    attr1 = param1;
+        attr2 = param2;
+	    print(attr2);
+	}
+
+	public func testFunc() -> void {
+	    var i: int = 1;
+	    while (i < 10) {
+            print(i);
+            i += 1;
+        }
+    }
+}
+
 class Program {
     public static var staticVarWithAssign: int = 123;
     public static var staticVar: int;
@@ -9,44 +38,14 @@ class Program {
         staticVarWithAssign += 1;
     }
 
-    private func testFunc() -> int {
-        var ternaryOperatorResult: int = 12 == 12 ? 1 : 2;
-        return 123;
-    }
-
     public static func main(args: str[]) -> void {
-        var x: int = 0;
-        while (x < 100) {
-            x += 1;
-            if (x % 3 == 0 and x % 5 == 0) {
-                print("FizzBuzz");
-            } else if (x % 3 == 0) {
-                print("Fizz");
-            } else if (x % 5 == 0) {
-                print("Buzz");
-            } else {
-                print(x);
-            }
-        }
-
         var obj: ClassName = new ClassName("test", 123);
+        // print(obj.attr1);
+
+        print(obj.attr2);
+        var obj2: ClassName2 = new ClassName2("test", 123);
+        obj2.testFunc();
+        staticTestFunc();
+        print(staticVarWithAssign);
     }
-}
-
-class ClassName {
-    private var attr1: str;
-	public var attr2: int;
-
-	public func __init__(param1: str, param2: int) -> ClassName {
-	    // TODO
-	}
-}
-
-class ClassName2 {
-    private var attr1: str;
-	public var attr2: int;
-
-	public func __init__(param1: str, param2: int) -> ClassName2 {
-	    // TODO
-	}
 }

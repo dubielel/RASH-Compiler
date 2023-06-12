@@ -13,6 +13,10 @@ class FunctionContainer:
     class_name: str
     is_new: bool = False
 
+    def __post_init__(self):
+        if self.identifier == "__init__":
+            self.return_type = "void"
+
     @property
     def name(self):
         scope_map = {Scope.PUBLIC: "", Scope.PROTECTED: "pr_", Scope.PRIVATE: "pv_"}

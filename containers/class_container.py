@@ -1,6 +1,14 @@
+from enum import Enum
+
 from containers.function_container import FunctionContainer
 from containers.variable_container import VariableContainer
 from enums.scope import Scope
+
+
+class AccessRestriction(Enum):
+    RESTRICTED_PROTECTED = 1
+    RESTRICTED_PRIVATE = 2
+    GRANTED = 3
 
 
 class ClassContainer:
@@ -13,6 +21,8 @@ class ClassContainer:
     static_attributes: dict[str, VariableContainer]
 
     library_dependencies: set[str]
+    subclasses: set[str]
+    superclasses: set[str]
 
     def __init__(self, name: str):
         self.name = name
@@ -22,6 +32,8 @@ class ClassContainer:
         self.static_attributes = {}
         self.has_init = False
         self.library_dependencies = set()
+        self.subclasses = set()
+        self.superclasses = set()
 
     def add_attribute(self, attribute: VariableContainer, is_static: bool = False):
         if is_static:
@@ -44,21 +56,21 @@ class ClassContainer:
     def create_new_method(self) -> FunctionContainer:
         self.library_dependencies.add("stdlib.h")
 
-        body = f"{{\n\t{self.name}* this = ({self.name}*)malloc(sizeof({self.name}));\n"
+        body = f"{{\n\t{self.name}* self = ({self.name}*)malloc(sizeof({self.name}));\n"
 
         for attribute in self.attributes.values():
             if attribute.value:
-                body += f"\tthis->{attribute.name} = {attribute.value};\n"
+                body += f"\tself->{attribute.name} = {attribute.value};\n"
 
         for method in self.methods.values():
-            body += f"\tthis->{method.name} = {self.name}_{method.name};\n"
+            body += f"\tself->{method.name} = {self.name}_{method.name};\n"
 
         if self.has_init:
             init_method = self.methods["__init__"]
             init_params = init_method.params[1:-1].split(", ")
             init_params = [p.split(" ")[1] for p in init_params][1:]
-            final_init_params = ["this", *init_params]
-            body += f"\tthis->{init_method.name}({', '.join(final_init_params)});\n\treturn this;\n}}"
+            final_init_params = ["self", *init_params]
+            body += f"\tself->{init_method.name}({', '.join(final_init_params)});\n\treturn self;\n}}"
             return FunctionContainer(
                 f"new__{self.name}",
                 self.name + "*",
@@ -69,7 +81,7 @@ class ClassContainer:
                 is_new=True,
             )
 
-        body += "\treturn this;\n}"
+        body += "\treturn self;\n}"
 
         return FunctionContainer(
             f"new__{self.name}",
@@ -110,6 +122,9 @@ class ClassContainer:
             for method in self.static_methods.values():
                 f.write(f"{method.get_global_declaration()}\n")
 
+            for attribute in self.static_attributes.values():
+                f.write(f"{attribute.get_static_declaration()}\n")
+
             f.write(f"{new_method.get_global_declaration()}\n")
             f.write(f"\n#endif\n")
 
@@ -126,3 +141,18 @@ class ClassContainer:
                 f.write(f"{method.get_definition()}\n\n")
 
             f.write(f"{new_method.get_definition()}\n\n")
+
+    def add_subclass(self, class_name: str):
+        self.subclasses.add(class_name)
+
+    def add_superclass(self, class_name: str):
+        self.superclasses.add(class_name)
+
+    def has_access(self, scope: Scope, accessor: str) -> AccessRestriction:
+        if scope == Scope.PUBLIC:
+            return AccessRestriction.GRANTED
+        elif scope == Scope.PROTECTED:
+            return AccessRestriction.GRANTED if accessor in self.subclasses else AccessRestriction.RESTRICTED_PROTECTED
+        elif scope == Scope.PRIVATE:
+            return AccessRestriction.GRANTED if accessor == self.name else AccessRestriction.RESTRICTED_PRIVATE
+

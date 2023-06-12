@@ -22,7 +22,7 @@ class VariableContainer:
         raise AttributeError("Cannot set name of AttributeContainer")
 
     def get_static_declaration(self):
-        return f"{self.type} {self.class_name}_{self.name};"
+        return f"extern {self.type} {self.class_name}_{self.name};"
 
     def get_static_definition(self):
         if self.value is None:

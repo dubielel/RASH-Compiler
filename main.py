@@ -16,7 +16,7 @@ def main():
     try:
         output_dir = sys.argv[2]
     except:
-        output_dir = 'codeGenTest.rash.c'
+        output_dir = '.rashc'
 
     in_file = FileStream(input_filename)
     lexer = LanguageTestLexer(in_file)
