@@ -99,6 +99,10 @@ class RashVisitor(LanguageTestParserVisitor):
         if len(ctx.getText().split(".")) > 1:
             # This is a property / method accessor
             # For now, this is only allowed for depth of 1, should be recursive
+
+            if ctx.getText().split(".")[0] == "super":
+                return "self->super"
+
             obj_name, property_name = ctx.getText().split(".")[:2]
             class_name = self.variables[obj_name][:-1]
 
@@ -127,7 +131,7 @@ class RashVisitor(LanguageTestParserVisitor):
 
         if ctx.getText() in self.classes[self.current_class_name].methods:
             method = self.classes[self.current_class_name].methods[ctx.getText()]
-            return f"self->{method.name}"
+            return f"{method.name}"
 
         return ctx.getText()
 
@@ -164,7 +168,17 @@ class RashVisitor(LanguageTestParserVisitor):
         self.classes[class_name] = ClassContainer(class_name)
         self.current_class_name = class_name
 
+        self.visitClassInheritance(ctx.classInheritance())
         self.visitClassBody(ctx.classBody())
+
+    def visitClassInheritance(self, ctx:LanguageTestParser.ClassInheritanceContext):
+        if ctx:
+            for class_name in ctx.identifier():
+                try:
+                    self.classes[self.current_class_name].add_superclass(self.classes[self.visitIdentifier(class_name)])
+                    self.classes[self.visitIdentifier(class_name)].add_subclass(self.classes[self.current_class_name])
+                except KeyError:
+                    raise ClassReferencedBeforeDefinitionException(self.visitIdentifier(class_name), ctx.start.line)
 
     def visitClassBody(self, ctx: LanguageTestParser.ClassBodyContext) -> None:
         for attributeDeclaration in ctx.classAttributeDeclaration():
@@ -416,8 +430,8 @@ class RashVisitor(LanguageTestParserVisitor):
             params = self.visitFunctionCallParams(ctx.functionCallParams())
             expr_value = params[1:-1].split(", ")[0].strip()
 
+
             if len(expr_value.split("->")) > 1:
-                print(expr_value.split("->"))
                 # This is case where it is an object property
                 if expr_value.split("->")[0] in self.variables:
                     # All objects are of pointer type <Class Name>* so we need to remove the last character
@@ -432,8 +446,13 @@ class RashVisitor(LanguageTestParserVisitor):
 
             if len(expr_value.split("->")) > 1:
                 attr_name = expr_value.split("->")[1]
+                print(attr_name)
+                if attr_name[:3] == "pv_" or attr_name[:3] == "pr_":
+                    attr_name = attr_name[3:]
+
                 if attr_name in self.classes[self.current_class_name].attributes:
                     var_type = self.classes[self.current_class_name].attributes[attr_name].type
+
                     return self.printWrapper(expr_value, var_type)
 
             if expr_value in self.variables:

@@ -25,6 +25,27 @@ class ClassName2 {
             i += 1;
         }
     }
+
+    public func overrideTestFunc() -> void {
+        print("override");
+    }
+}
+
+class ClassName3 (ClassName2) {
+    private var attr3: float;
+
+    public func __init__(param1: str, param2: int, param3: float) -> ClassName3 {
+        super.__init__(param1, param2);
+        attr3 = param3;
+    }
+
+    public func someFunc() -> void {
+        print(attr3);
+    }
+
+    public func overrideTestFunc() -> void {
+        print("override2");
+    }
 }
 
 class Program {
@@ -47,5 +68,10 @@ class Program {
         obj2.testFunc();
         staticTestFunc();
         print(staticVarWithAssign);
+
+        var obj3: ClassName3 = new ClassName3("test", 123, 21.37);
+        obj3.someFunc();
+        obj3.testFunc();
+        obj3.overrideTestFunc();
     }
 }
