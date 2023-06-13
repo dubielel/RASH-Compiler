@@ -1,0 +1,17 @@
+class Program {
+    public static var staticVarWithAssign: int = 43299;
+    public static var staticVar: int;
+
+    public static func staticTestFunc() -> int {
+        staticVarWithAssign += 1;
+    }
+
+    public static func main(args: str[]) -> void {    	
+        staticVar = 58843;
+        print(staticVar);
+
+        print(staticVarWithAssign);
+        staticTestFunc();
+        print(staticVarWithAssign);
+    }
+}

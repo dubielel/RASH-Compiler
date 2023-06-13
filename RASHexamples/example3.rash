@@ -1,0 +1,52 @@
+class ClassName2 {
+    private var attr1: str;
+    public var attr2: int;
+
+    public func __init__(param1: str, param2: int) -> ClassName2 {
+        attr1 = param1;
+        attr2 = param2;
+        print(attr2);
+    }
+ 
+    public func testFunc() -> void {
+        var i: int = 1;
+        while (i < 10) {
+            print(i);
+            i += 1;
+        }
+    }
+
+    public func overrideTestFunc() -> void {
+        print("override classname2");
+    }
+}
+ 
+class ClassName3 (ClassName2) {
+    private var attr3: float;
+ 
+    public func __init__(param1: str, param2: int, param3: float) -> ClassName3 {
+        super.__init__(param1, param2);
+        attr3 = param3;
+    }
+
+    public func someFunc() -> void {
+        print(attr3);
+    }
+ 
+    public func overrideTestFunc() -> void {
+        print("override classname3");
+    }
+}
+ 
+class Program {
+    public static func main(args: str[]) -> void {
+        var obj2: ClassName2 = new ClassName2("test", 456);
+        obj2.testFunc();
+        obj2.overrideTestFunc();
+
+        var obj3: ClassName3 = new ClassName3("test", 123, 21.37);
+        obj3.someFunc();
+        obj3.testFunc();
+        obj3.overrideTestFunc();
+    }
+}

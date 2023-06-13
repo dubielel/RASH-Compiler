@@ -22,10 +22,10 @@ run_c() {
 
 while getopts ":r:hf:" arg; do
     case "$arg" in
-        f) # Compile code from the file
+        f) # Translate code from the file
             translate "${OPTARG}"
             ;;
-        r) # Compile with CMake
+        r) # Compile and run with CMake
 			echo "${OPTARG}"
             translate "${OPTARG}"
             [ $? -eq 0 ] && run_c "${OPTARG}"

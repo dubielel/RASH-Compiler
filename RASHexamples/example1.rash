@@ -1,0 +1,28 @@
+class ClassName {
+    private var attr1: str;
+    public var attr2: int;
+
+    public func __init__(param1: str, param2: int) -> ClassName {
+        attr1 = param1;
+        attr2 = param2;
+    }
+  
+    public func testFunc() -> void {
+        var i: int = 111;
+        while (i > 100) {
+            print(i);
+            i -= 1;
+        }
+    }
+}
+
+class Program {
+    public static func main(args: str[]) -> void {
+        var obj: ClassName = new ClassName("test", 123);
+        
+        // print(obj.attr1);
+        print(obj.attr2);
+
+        obj.testFunc();
+    }
+}
