@@ -112,3 +112,16 @@ class CodeEditor(QTabWidget):
             return content
         except:
             return ""
+        
+    def get_current_tab_name(self):
+        current_tab_index = self.currentIndex()
+        current_tab_text = self.tabText(current_tab_index)
+        
+        if current_tab_text.endswith("*"):
+            response = self.prompt_to_save_changes(current_tab_text)
+            if response == QMessageBox.Save:
+                self.save_current_tab()
+            elif response == QMessageBox.Cancel:
+                return None
+
+        return self.tabText(current_tab_index)

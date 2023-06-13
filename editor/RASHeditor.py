@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QFileSystemModel, \
     QTreeView, QWidget, QPlainTextEdit, QSplitter, QMessageBox, QAction, QFileDialog
-from PyQt5.QtCore import QDir, Qt
+from PyQt5.QtCore import QDir, Qt, QProcess
 from widgets.code_editor import CodeEditor
 
 
@@ -39,6 +39,13 @@ class RashEditor(QMainWindow):
         file_menu.addAction(self.open_action)
         file_menu.addAction(self.open_directory_action)
 
+        self.run_action = QAction("Run", self)
+        self.run_action.setShortcut("Ctrl+R")
+        self.run_action.triggered.connect(self.run_code)
+
+        run_menu = self.menuBar().addMenu("Run")
+        run_menu.addAction(self.run_action)
+
 
 
     def create_widgets(self):
@@ -54,7 +61,7 @@ class RashEditor(QMainWindow):
 
         # Terminal Execute Button
         # self.execute_button = QPushButton("Execute")
-        # self.execute_button.clicked.connect(self.execute_command)
+        # self.execute_button.clicked.connect(self.execute_command
 
     def create_layout(self):
         # Browser Widget
@@ -149,10 +156,42 @@ class RashEditor(QMainWindow):
             self.code_editor.clear()
         else:
             QMessageBox.warning(self, "Warning", "Selected item is not a file.")
-        
 
-    def handle_output(self, process):
+    def execute_command(self):
+        command = self.terminal_input.toPlainText().strip()
+        if command:
+            self.terminal_input.clear()
+            process = QProcess()
+            process.setProcessChannelMode(QProcess.MergedChannels)
+            process.readyReadStandardOutput.connect(lambda: self.handle_output(process))
+            process.start(command)
+        
+    def run_code(self):
+        filename = self.code_editor.get_current_tab_name()
+        if not filename:
+            return
+        
+        # command = f"bash rash.sh -f {filename}".strip()
+        # print(command)
+        # process_compile = QProcess()
+        # process_compile.setProcessChannelMode(QProcess.MergedChannels)
+        # process_compile.readyReadStandardOutput.connect(lambda: self.handle_std_output(process_compile))
+        # process_compile.readyReadStandardError.connect(lambda: self.handle_std_error(process_compile))
+        # process_compile.start(command)
+
+        command = f"bash rash.sh -r {filename}"
+        process_run = QProcess()
+        process_run.setProcessChannelMode(QProcess.MergedChannels)
+        process_run.readyReadStandardOutput.connect(lambda: self.handle_std_output(process_run))
+        process_run.readyReadStandardError.connect(lambda: self.handle_std_error(process_run))
+        process_run.start(command)
+
+    def handle_std_output(self, process):
         output = process.readAllStandardOutput().data().decode()
+        self.terminal_output.appendPlainText(output)
+
+    def handle_std_error(self, process):
+        output = process.readAllStandardError().data().decode()
         self.terminal_output.appendPlainText(output)
 
 

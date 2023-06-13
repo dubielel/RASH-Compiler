@@ -2,33 +2,33 @@
 
 usage() { echo "$0 usage:" && grep " .)\ #" $0; exit 0; }
 
-run() {
+translate() {
     echo $1;
-    new_name=$(basename $1)".c"
-    python main.py $1 ".rashc/${new_name}"
     echo $(basename $1)".c"
+    new_name=$(basename $1)".c"
+    python main.py $1 ".rashc/"
 }
 
 run_c() {
-	echo $1;
-    cd .rashc/$(basename "$1")".c"
+    cd .rashc/
     mkdir -p build-dir
     cd build-dir
     cmake ..
     make
-    ./rashProject;
+    [ $? -eq 0 ] && ./rashProject
 }
 
 [ $# -eq 0 ] && usage
 
 while getopts ":r:hf:" arg; do
     case "$arg" in
-        f) # Run code from the file
-            run "${OPTARG}"
+        f) # Compile code from the file
+            translate "${OPTARG}"
             ;;
-        r) # Compile with CMake, use this after -f option
+        r) # Compile with CMake
 			echo "${OPTARG}"
-            run_c "${OPTARG}"
+            translate "${OPTARG}"
+            [ $? -eq 0 ] && run_c "${OPTARG}"
             ;;
         h | *) # Display this message
             usage
