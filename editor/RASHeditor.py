@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QFil
     QTreeView, QWidget, QPlainTextEdit, QSplitter, QMessageBox, QAction, QFileDialog
 from PyQt5.QtCore import QDir, Qt, QProcess
 from widgets.code_editor import CodeEditor
+from widgets.popup_window import PopupWindow
 
 
 class RashEditor(QMainWindow):
@@ -33,11 +34,20 @@ class RashEditor(QMainWindow):
         self.open_directory_action.setShortcut("Ctrl+Shift+O")
         self.open_directory_action.triggered.connect(self.open_directory_dialog)
 
-        # Add the "Save" action to the file menu
+        self.new_file_action = QAction("New File", self)
+        self.new_file_action.setShortcut("Ctrl+N")
+        self.new_file_action.triggered.connect(self.create_new_file)
+
+        self.new_directory_action = QAction("New Directory", self)
+        self.new_directory_action.setShortcut("Ctrl+Shift+N")
+        self.new_directory_action.triggered.connect(self.create_new_directory)
+
         file_menu = self.menuBar().addMenu("File")
         file_menu.addAction(self.save_action)
         file_menu.addAction(self.open_action)
         file_menu.addAction(self.open_directory_action)
+        file_menu.addAction(self.new_file_action)
+        file_menu.addAction(self.new_directory_action)
 
         self.run_action = QAction("Run", self)
         self.run_action.setShortcut("Ctrl+R")
@@ -156,6 +166,44 @@ class RashEditor(QMainWindow):
             self.code_editor.clear()
         else:
             QMessageBox.warning(self, "Warning", "Selected item is not a file.")
+
+    def create_file_or_directory(self):
+        new_file_dialog = PopupWindow()
+
+    def create_new_file(self):
+        file_dialog = QFileDialog()
+        file_dialog.setFileMode(QFileDialog.AnyFile)
+        file_dialog.setAcceptMode(QFileDialog.AcceptSave)
+        if file_dialog.exec_() == QFileDialog.Accepted:
+            file_path = file_dialog.selectedFiles()[0]
+            directory = os.path.dirname(file_path)
+        else:
+            return
+
+        if os.path.exists(file_path):
+            QMessageBox.warning(self, "Error", "The specified file or directory already exists.")
+            return
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        open(file_path, 'w').close()
+        QMessageBox.information(self, "Success", "File created successfully!")
+
+    def create_new_directory(self):
+        dir_dialog = QFileDialog()
+        dir_dialog.setFileMode(QFileDialog.Directory)
+        if dir_dialog.exec_() == QFileDialog.Accepted:
+            directory_path = dir_dialog.selectedFiles()[0]
+        else:
+            return
+
+        if os.path.exists(directory_path):
+            QMessageBox.warning(self, "Error", "The specified file or directory already exists.")
+            return
+
+        os.makedirs(directory_path)
+        QMessageBox.information(self, "Success", "Directory created successfully!")
 
     def execute_command(self):
         command = self.terminal_input.toPlainText().strip()
