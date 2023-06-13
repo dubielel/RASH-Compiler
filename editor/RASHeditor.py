@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QFil
     QTreeView, QWidget, QPlainTextEdit, QSplitter, QMessageBox, QAction, QFileDialog
 from PyQt5.QtCore import QDir, Qt, QProcess
 from widgets.code_editor import CodeEditor
-from widgets.popup_window import PopupWindow
 
 
 class RashEditor(QMainWindow):
