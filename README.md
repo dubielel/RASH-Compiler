@@ -29,7 +29,7 @@ Opisuje konstruowanie takich składników jak: importów, deklaracji, przypisań
 ### Instalacja i wymagania wstępne
 Najpierw należy pobrać folder skompresowany z najnowszą wersją:
 
-    git clone -b v1.0.0 https://github.com/dubielel/RASH-Compiler RASH-Compiler
+    git clone -b v1.0.1 https://github.com/dubielel/RASH-Compiler RASH-Compiler
 
 Następnie należy utworzyć środowisko, np. za pomocą narzędzia ``pipenv``, znajdując się w katalogu głównym repozytorium:
 
